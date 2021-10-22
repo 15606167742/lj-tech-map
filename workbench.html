@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="renderer" content="webkit">
+		<title>电子地图</title>
+		<style>
+			html,body{margin:0;height:100%;}
+			body{overflow:hidden;}
+			#canvas-frame{width:100%;height:100%;background:black;position:relative;}
+			
+			::-webkit-scrollbar{width:5px;height:5px;}
+			::-webkit-scrollbar-thumb{box-shadow:inset 0 0 5px rgba(0,0,0,0.2);background:#272f3e;}
+			
+			.menubench{position:absolute;top:0;width:340px;}
+			.menubench>div{margin:5px;}
+			.menubench a{padding:0 5px;cursor:pointer;background:#ffffff11;}
+			.menubench a.selected{cursor:auto;}
+			.dimension>a{border:1px solid blueviolet;color:blueviolet;}
+			.dimension .selected{color:white;background:blueviolet;}
+			.createobject>a{border:1px solid aqua;color:aqua;}
+			.createobject .selected{color:white;background:aqua;}
+			.loadmodel>a{border:1px solid orange;color:orange;}
+			.loadmodel .selected{color:white;background:orange;}
+			.objectsetting>a{border:1px solid green;color:green;}
+			.objectsetting .selected{color:white;background:green;}
+			
+			.objectlabel{display:flex;margin-top:-11px;margin-left:-6px;}
+			.objectlabel>.dialog{position:relative;top:-17px;background:rgba(52,62,80,.8);padding:5px 10px;border:1px solid #000;border-radius:5px;display:flex;align-items:center}
+			.objectlabel.left{margin-left:6px;}
+			.objectlabel.left>img{order:1;transform:rotateY(180deg);}
+			.objectlabel.left>.dialog>.line{order:1;transform:translateX(11px);}
+			.objectlabel>.dialog>.line{border:1px solid #D8D8D8;height:20px;transform:translateX(-11px);}
+			.objectlabel>.dialog>.text{color:#fff;line-height:1.6;}
+			
+			.objects{border:1px solid black;width:150px;padding:2px;background-color:#ffffff22;min-height:105px;max-height:334px;overflow:auto;}
+			.objects>div{cursor:pointer;padding:1px;font-size:14px;}
+			.objects>div.selected{cursor:pointer;background-color:#bbb;color:white;}
+			
+			.objectsparams{width:215px;font-size:14px;}
+			.objectparams{border:1px solid black;padding:2px;color:black;margin:1px 0;}
+			.objectparams>.name{color:#BBBBBB;font-size:16px;}
+			.objectparams>.item{display:flex;}
+			.objectparams>.item>.info{width:80px;}
+			.objectparams>.item>.buttons>input{width:24px;}
+			
+			.deletehole:hover{color:#ca2f2f;font-weight:bold;}
+		</style>
+	</head>
+	<body>
+		<div id="canvas-frame"></div>
+		<div class="menubench">
+			<div class="dimension">
+				<a value="2D" @click="updateDimension" :class="{selected:!is3D}">2D</a>
+				<a value="3D" @click="updateDimension" :class="{selected:is3D}">3D</a>
+			</div>
+			<div class="loadmodel">
+				<a @click="isLock=false" :class="{selected:!isLock}">拖动可用</a>
+				<a @click="isLock=true;mouseEvents.pointer.isFocus=false;" :class="{selected:isLock}">拖动不可用</a>
+			</div>
+			<div class="createobject">
+				<a value="pointer" @click="updateMode" :class="{selected:mode=='pointer'}">选择</a>
+				<!--<a value="areaselect" @click="updateMode" :class="{selected:mode=='areaselect'}">areaselect</a>-->
+				<a value="rect" @click="updateMode" :class="{selected:mode=='rect'}">矩形</a>
+				<a value="circle" @click="updateMode" :class="{selected:mode=='circle'}">圆柱</a>
+				<a value="hole" @click="operateObject" :class="{selected:mode=='hole'}" v-if="objectList.some(p=>p.selected&&p.params.type=='Rect')">打洞</a>
+				<!--<a value="polygon" @click="updateMode" :class="{selected:mode=='polygon'}">polygon</a>-->
+				<!--<a value="path" @click="updateMode" :class="{selected:mode=='path'}">path</a>-->
+			</div>
+			<div class="objectsetting" v-if="objectList.some(p=>p.selected&&p.params.type=='Rect')">
+				<a @click="holeModelName='door'" :class="{selected:holeModelName=='door'&&mode=='hole'}">门</a>
+				<a @click="holeModelName='window'" :class="{selected:holeModelName=='window'&&mode=='hole'}">窗</a>
+			</div>
+			<div class="loadmodel">
+				<a value="bed" @click="loadModel" :class="{selected:modelName=='bed'&&mode=='model'}">床</a>
+				<!--<a value="internalscreen" @click="loadModel" :class="{selected:modelName=='internalscreen'&&mode=='model'}">internalscreen</a>-->
+				<!--<a value="externalscreen" @click="loadModel" :class="{selected:modelName=='externalscreen'&&mode=='model'}">externalscreen</a>-->
+				<!--<a value="tv" @click="loadModel" :class="{selected:modelName=='tv'&&mode=='model'}">tv</a>-->
+				<!--<a value="door" @click="loadModel" :class="{selected:modelName=='door'&&mode=='model'}">door</a>-->
+				<!--<a value="window" @click="loadModel" :class="{selected:modelName=='window'&&mode=='model'}">window</a>-->
+				<a value="fence" @click="loadModel" :class="{selected:modelName=='fence'&&mode=='model'}">围栏</a>
+				<a value="trough" @click="loadModel" :class="{selected:modelName=='trough'&&mode=='model'}">水池</a>
+				<a value="urinal" @click="loadModel" :class="{selected:modelName=='urinal'&&mode=='model'}">便池</a>
+				<!--<a value="tree" @click="loadModel" :class="{selected:modelName=='tree'&&mode=='model'}">tree</a>-->
+				<!--<a value="camera" @click="loadModel" :class="{selected:modelName=='camera'&&mode=='model'}">camera</a>-->
+			</div>
+			<div class="objectsetting">
+				<a value="delete" @click="operateObject" style="display:none;">delete</a>
+				<!--<a value="save" @click="operateObject">save</a>-->
+				<a value="load" @click="operateObject" style="display:none;">load</a>
+				<a value="map" @click="operateObject" style="display:none;">map</a>
+				<a value="get" @click="operateObject" style="display:none;">get</a>
+			</div>
+			<div style="display:flex;">
+				<div class="objects">
+					<div v-for="(object,index) in objectList" @click="objectClick(index)" :class="{selected:object.selected}">{{object.name}}</div>
+				</div>
+				<div class="objects" style="margin-left:5px;">
+					<div v-for="(hole,index) in holeList" style="display:flex;" :class="{selected:hole.selected}">
+						<span style="flex-grow:1;" @click="holeDetail(hole)">{{'洞'+(index+1)}}</span>
+						<span @click="holeClick(index)" class="deletehole">×</span>
+					</div>
+				</div>
+			</div>
+			<div class="objectsparams">
+				{{holeConfig}}
+			</div>
+			<div class="objectsparams">
+				<div v-for="object in objectList.filter(o=>{return o.selected;})" class="objectparams">
+					<div class="name">{{object.name}}：</div>
+					<div>{{getObjectInfo(object)}}</div>
+					<div>位置：</div>
+					<div class="item"><span class="info">x：{{object.params.position.x.toFixed(2)}}</span>
+						<span class="buttons">
+							<input type="button" value="-" @click.exact="setParamValue(object,'position.x',-1)" @click.ctrl="setParamValue(object,'position.x',-100)" @click.shift="setParamValue(object,'position.x',-10)" @click.alt="setParamValue(object,'position.x',-0.1)"/>
+							<input type="button" value="+" @click.exact="setParamValue(object,'position.x',1)" @click.ctrl="setParamValue(object,'position.x',100)" @click.shift="setParamValue(object,'position.x',10)" @click.alt="setParamValue(object,'position.x',0.1)"/>
+						</span>
+					</div>
+					<div class="item"><span class="info">y：{{object.params.position.y.toFixed(2)}}</span>
+						<span class="buttons">
+							<input type="button" value="-" @click.exact="setParamValue(object,'position.y',-1)" @click.ctrl="setParamValue(object,'position.y',-100)" @click.shift="setParamValue(object,'position.y',-10)" @click.alt="setParamValue(object,'position.y',-0.1)"/>
+							<input type="button" value="+" @click.exact="setParamValue(object,'position.y',1)" @click.ctrl="setParamValue(object,'position.y',100)" @click.shift="setParamValue(object,'position.y',10)" @click.alt="setParamValue(object,'position.y',0.1)"/>
+						</span>
+					</div>
+					<div class="item"><span class="info">z：{{object.params.position.z.toFixed(2)}}</span>
+						<span class="buttons">
+							<input type="button" value="-" @click.exact="setParamValue(object,'position.z',-1)" @click.ctrl="setParamValue(object,'position.z',-100)" @click.shift="setParamValue(object,'position.z',-10)" @click.alt="setParamValue(object,'position.z',-0.1)"/>
+							<input type="button" value="+" @click.exact="setParamValue(object,'position.z',1)" @click.ctrl="setParamValue(object,'position.z',100)" @click.shift="setParamValue(object,'position.z',10)" @click.alt="setParamValue(object,'position.z',0.1)"/>
+						</span>
+					</div>
+					<!--<div>尺寸：</div>
+					<div>
+						<input type="radio" value="center" v-model="direction">中
+						<input type="radio" value="up" v-model="direction">上
+						<input type="radio" value="down" v-model="direction">下
+						<input type="radio" value="left" v-model="direction">左
+						<input type="radio" value="right" v-model="direction">右
+					</div>
+					<div class="item" v-if="object.params.width!=null"><span class="info">宽：{{object.params.width.toFixed(2)}}</span>
+						<span class="buttons">
+							<input type="button" value="-" @click.exact="setParamValue(object,'width',-1)" @click.ctrl="setParamValue(object,'width',-100)" @click.shift="setParamValue(object,'width',-10)" @click.alt="setParamValue(object,'width',-0.1)"/>
+							<input type="button" value="+" @click.exact="setParamValue(object,'width',1)" @click.ctrl="setParamValue(object,'width',100)" @click.shift="setParamValue(object,'width',10)" @click.alt="setParamValue(object,'width',0.1)"/>
+						</span>
+					</div>
+					<div class="item" v-if="object.params.height!=null"><span class="info">高：{{object.params.height.toFixed(2)}}</span>
+						<span class="buttons">
+							<input type="button" value="-" @click.exact="setParamValue(object,'height',-1)" @click.ctrl="setParamValue(object,'height',-100)" @click.shift="setParamValue(object,'height',-10)" @click.alt="setParamValue(object,'height',-0.1)"/>
+							<input type="button" value="+" @click.exact="setParamValue(object,'height',1)" @click.ctrl="setParamValue(object,'height',100)" @click.shift="setParamValue(object,'height',10)" @click.alt="setParamValue(object,'height',0.1)"/>
+						</span>
+					</div>
+					<div class="item" v-if="object.params.depth!=null"><span class="info">深：{{object.params.depth.toFixed(2)}}</span>
+						<span class="buttons">
+							<input type="button" value="-" @click.exact="setParamValue(object,'depth',-1)" @click.ctrl="setParamValue(object,'depth',-100)" @click.shift="setParamValue(object,'depth',-10)" @click.alt="setParamValue(object,'depth',-0.1)"/>
+							<input type="button" value="+" @click.exact="setParamValue(object,'depth',1)" @click.ctrl="setParamValue(object,'depth',100)" @click.shift="setParamValue(object,'depth',10)" @click.alt="setParamValue(object,'depth',0.1)"/>
+						</span>
+					</div>-->
+				</div>
+			</div>
+		</div>
+		<script src="lib/jquery.min.js"></script>
+		<script src="lib/vue.js"></script>
+		<script src="lib/three.min.js"></script>
+		<!--<script src="lib/inflate.min.js"></script>-->
+		<!--<script src="lib/FBXLoader.js" ></script>-->
+		<script src="lib/OBJLoader.js"></script>
+		<script src="lib/MTLLoader.js" ></script>
+		<script src="lib/GLTFLoader.js" ></script>
+		
+		<!--<script src="lib/DragControls.js"></script>-->
+		<!--<script src="lib/TransformControls.js"></script>-->
+		<script src="lib/OrbitControls.js"></script>
+		<script src="lib/CSS2DRenderer.js"></script>
+		<script src="lib/threebsp.js"></script>
+		<script src="lib/dat.gui.min.js"></script>
+		
+		<script src="lib/CopyShader.js"></script>
+		<script src="lib/FXAAShader.js"></script>
+		<script src="lib/EffectComposer.js"></script>
+		<script src="lib/RenderPass.js"></script>
+		<script src="lib/ShaderPass.js"></script>
+		<script src="lib/OutlinePass.js"></script>
+		
+		<script src="js/common.js"></script>
+		<script src="js/utility.js"></script>
+		<script src="js/objects.js"></script>
+		<script src="js/custommodel.js"></script>
+		<script src="js/stateEvents.js"></script>
+		<script src="js/xuyi_map.js"></script>
+		<script>
+			
+			var menuState={
+				is3D:true,
+				mode:'pointer',
+				modelName:'',
+				holeModelName:'door',
+				isLock:true,
+				objectList:[],
+				holeList:[],
+				direction:'center',
+				referenceObjects:[],
+				hole:{}
+			};
+			var menuBench=new Vue({
+				el:'.menubench',
+				data:menuState,
+				computed:{
+					holeConfig(){
+						if(Object.keys(this.hole).length==0)
+							return '';
+						return `{height:${this.hole.height},width:${this.hole.width},depth:${this.hole.depth},`+
+							`position:{x:${this.hole.position.x.toFixed(2)},y:${this.hole.position.y.toFixed(2)},z:${this.hole.position.z.toFixed(2)}}},`;
+					}
+				},
+				methods: {
+					getObjectInfo(obj){
+						let object=obj.params;
+						return `{type:'Model',modelName:'${object.modelName}',`+
+							`position:{x:${object.position.x.toFixed(2)},y:${object.position.y.toFixed(2)},z:${object.position.z.toFixed(2)}},`+
+							`rotation:{x:${object.rotation.x},y:${object.rotation.y},z:${object.rotation.z}}},`;
+					},
+					holeClick(index){
+						for(var i=0;i<this.objectList.length;i++){
+							if(this.objectList[i].selected){
+								this.holeList.splice(index,1);
+								objectList[i].update({holes:this.holeList});
+								break;
+							}
+						}
+					},
+					holeDetail(hole){
+						this.hole=hole;
+					},
+					updateDimension(e){
+						this.is3D=e.currentTarget.attributes['value'].value=='3D';
+						orbitctrl.enabled=this.is3D;
+						planformOrbitctrl.enabled=!this.is3D;
+						outlinePass.renderCamera=menuState.is3D?camera:planformCamera;
+            			renderPass.camera=menuState.is3D?camera:planformCamera;
+					},
+					updateMode(e){
+						this.mode=e.currentTarget.attributes['value'].value;
+						datumObject=null;
+						cancelFocus();
+					},
+					loadModel(e){
+						this.mode='model';
+						this.modelName=e.currentTarget.attributes['value'].value;
+						datumObject=null;
+						cancelFocus();
+					},
+					objectClick(index){
+						var focus=objectList[index];
+						if(menuState.objectList[index].selected){
+							selectObjects();
+						}
+						else{
+							selectObjects([focus]);
+						}
+					},
+					getObject(object){
+						for(var i=0;i<this.objectList.length;i++){
+							if(this.objectList[i]==object){
+								return objectList[i];
+							}
+						}
+					},
+					setParamValue(object,name,step){
+						if(this.direction=='center'){
+							var val=getParamValue(object,name)+step;
+							this.getObject(object).update(setObjectParam(name,val));
+						}
+						else if(this.direction=='up'){
+							var val=getParamValue(object,'position.z')-step/2;
+							this.getObject(object).update(setObjectParam('position.z',val));
+							val=getParamValue(object,'height')+step;
+							this.getObject(object).update(setObjectParam('height',val));
+						}
+						else if(this.direction=='down'){
+							var val=getParamValue(object,'position.z')+step/2;
+							this.getObject(object).update(setObjectParam('position.z',val));
+							val=getParamValue(object,'height')+step;
+							this.getObject(object).update(setObjectParam('height',val));
+						}
+						else if(this.direction=='left'){
+							var val=getParamValue(object,'position.x')-step/2;
+							this.getObject(object).update(setObjectParam('position.x',val));
+							val=getParamValue(object,'width')+step;
+							this.getObject(object).update(setObjectParam('width',val));
+						}
+						else if(this.direction=='right'){
+							var val=getParamValue(object,'position.x')+step/2;
+							this.getObject(object).update(setObjectParam('position.x',val));
+							val=getParamValue(object,'width')+step;
+							this.getObject(object).update(setObjectParam('width',val));
+						}
+					},
+					operateObject(e){
+						var operate;
+						if(typeof e=='string'){
+							operate=e;
+						}
+						else{
+							operate=e.currentTarget.attributes['value'].value;
+						}
+						if(operate=='delete'){
+							deleteFocusObjects();
+						}
+						else if(operate=='hole'){
+							this.mode='hole';
+							var s=this.objectList.filter(p=>p.selected);
+							if(s.length!=0){
+								var p=s[0].params;
+								var map=Object.assign({},p.map);
+								map.opacity=0;//参照
+								var holeReference=new ThreeMap.Rect({
+									hollow:p.hollow,height:p.height,width:p.width,depth:p.depth,position:p.position,rotation:p.rotation,
+									map:map
+								});
+								holeReference.create();
+								this.referenceObjects=[holeReference];
+							}
+							//var obj=new ThreeMap.Rect(objs[i]);
+							//obj.create();
+						}
+						else if(operate=='get'){
+							console.log(camera.position);
+						}
+						else if(operate=='save'){
+							/*var objs=objectList.map(function(o){return o.params;});
+							var id=common.getUrlParam('id');
+							db.collection('objects').update({objects:objs},{mapId:id},true,function(){
+								alert('保存成功');
+							});*/
+						}
+						else if(operate=='load'){
+							var objs=demoData;
+							for(var i=0;i<objs.length;i++){
+								/*if(i==0){
+									var hole={
+										width:objs[5].width,
+										height:10,//objs[5].height,
+										depth:objs[5].depth,
+										position:{
+											x:objs[5].position.x-objs[i].position.x,
+											y:objs[5].position.y-objs[i].position.y+objs[5].depth/2,
+											z:objs[5].position.z-objs[i].position.z,
+										}
+									}
+									console.log(hole);
+									objs[i].holes=[hole];
+								}*/
+								//console.log(objs[i]);
+								var obj=new ThreeMap[objs[i].type](objs[i]);
+								obj.create();
+							}
+							
+							/*var id=common.getUrlParam('id');
+							db.collection('objects').find({mapId:id},function(data){
+								if(data.length==0)
+									return;
+								var objs=data[0].objects;
+								for(var i=0;i<objs.length;i++){
+									if(i==0){
+										var hole={
+											width:objs[5].width,
+											height:10,//objs[5].height,
+											depth:objs[5].depth,
+											position:{
+												x:objs[5].position.x-objs[i].position.x,
+												y:objs[5].position.y-objs[i].position.y+objs[5].depth/2,
+												z:objs[5].position.z-objs[i].position.z,
+											}
+										}
+										console.log(hole);
+										objs[i].holes=[hole];
+									}
+									var obj=new ThreeMap[objs[i].type](objs[i]);
+									obj.create();
+								}
+							});*/
+						}
+						/*else if(operate=='map'){
+							var id='5c63bba0e1643c25a061e1d7';
+							db.collection('objects').find({mapId:id},function(data){
+								if(data.length==0)
+									return;
+								var objs=data[0].objects;
+								console.log(objs);
+								
+								var position={x:0,y:200,z:0};
+								for(var i=0;i<objs.length;i++){
+									objs[i].position.x+=position.x;
+									objs[i].position.y+=position.y;
+									objs[i].position.z+=position.z;
+									var obj=new ThreeMap[objs[i].type](objs[i]);
+									obj.create();
+								}
+							});
+						}*/
+						else if(operate=='map'){
+							var id='5c63bba0e1643c25a061e1d7';
+							var obj=new ThreeMap.CustomModel();
+							obj.create();
+						}
+					}
+					/*watch:{
+			            id:function(val){
+			                if(val!=''){
+			                    focusDom.attr('id',val);
+			                }
+			                else{
+			                    focusDom.removeAttr('id');
+			                }
+			            }
+					}*/
+				},
+				watch:{
+					mode(val,oldVal){
+						if(oldVal=='hole'&&this.referenceObjects.length!=0){
+							for(var i=0;i<this.referenceObjects.length;i++){
+								this.referenceObjects[i].remove();
+							}
+							this.referenceObjects=[];
+						}
+					}
+				}
+			});
+			
+			var getParamValue=function(object,name){
+				var obj=object.params;
+				var names=name.split('.');
+				for(var i=0;i<names.length;i++){
+					obj=obj[names[i]];
+				}
+				return obj;
+			}
+			
+			var setObjectParam=function(name,value){
+				var names=name.split('.');
+				var result={};
+				var obj=result;
+				for(var i=0;i<names.length;i++){
+					if(i==names.length-1){
+						obj[names[i]]=value;
+					}
+					else{
+						obj[names[i]]={};
+						obj=obj[names[i]];
+					}
+				}
+				return result;
+			}
+			
+			//db.collection('objects').find();
+		
+			/*$.get('/db/objects',{},function(data){
+				var html='';
+				for(var i=0;i<data.length;i++){
+					html+='<div>'+data[i]._id+'</div>';
+				}
+				$('#app').html(html);
+			});*/
+			
+			Array.prototype.remove=function(obj){
+			    for(var i=0;i<this.length;i++)
+			    {
+			        if(this[i]==obj)
+			        {
+			            this.splice(i,1);
+			        }
+			    }
+			}
+			
+			Array.prototype.removeAt=function(i){
+			    this.splice(i,1);
+			}
+			
+			var renderer;
+			var labelRenderer;
+			var width;
+			var height;
+			
+			var raycaster = new THREE.Raycaster();
+			var datumObject;
+            var focusObjects=[];
+            var benchmarkObjectColors=["#1f77b4","#aec7e8","#ffbb78","#98df8a","#bcbd22","#2ca02c","#dbdb8d", "#EE8A31","#8c564b","#c49c94"];
+			var colorIndex=0;
+			var paramsPanel;
+			var mouseEvents={
+				pointer:{
+					isFocus:false,
+					mousedown:function(e){
+						var focus=getFocusObject(e);
+						if(focus!=null){
+							if(e.ctrlKey){
+								/*if(focusObjects.indexOf(focus)==-1){
+									outlinePass.selectedObjects.push(focus);
+									focusObjects.push(focus);
+								}
+								else{
+									outlinePass.selectedObjects.remove(focus);
+									focusObjects.remove(focus);
+								}*/
+								if(focusObjects.indexOf(focus)==-1){
+									focusObjects.push(focus);
+									selectObjects(focusObjects.map(function(o){return o.objectClass;}));
+								}
+								else{
+									focusObjects.remove(focus);
+									selectObjects(focusObjects.map(function(o){return o.objectClass;}));
+								}
+							}
+							else if(focusObjects.indexOf(focus)==-1){
+								selectObjects([focus.objectClass]);
+								/*outlinePass.selectedObjects=[focus];
+								focusObjects=[focus];
+								createPanel(focus.objectClass.guiParams,focus.objectClass.params,focus.objectClass);*/
+							}
+							for(var i=0;i<focusObjects.length;i++){
+								focusObjects[i].originalPosition={
+									x:focusObjects[i].position.x,
+									y:focusObjects[i].position.y,
+									z:focusObjects[i].position.z
+								};
+							}
+							mouseEvents.pointer.isFocus=true;
+						}
+						else{
+							mouseEvents.pointer.isFocus=false;
+						}
+					},
+					mousemove:function(e){
+						if(e.originalPoint!=null){
+							var p=getGroundPoint(e);
+							if(p!=null&&mouseEvents.pointer.isFocus&&!menuState.isLock){
+								var offsetX=p.x-e.originalPoint.x;
+								var offsetY=p.y-e.originalPoint.y;
+								for(var i=0;i<focusObjects.length;i++){
+									focusObjects[i].objectClass.update({position:{
+										x:focusObjects[i].originalPosition.x+offsetX,
+										y:p.z-focusObjects[i].objectClass.objectArea.y.min,
+										z:focusObjects[i].originalPosition.z+offsetY
+									}});
+								}
+							}
+							if(!menuState.isLock&&mouseEvents.pointer.isFocus)
+								return false;
+						}
+					},
+					mouseup:function(e){
+						if(e.isClick&&!mouseEvents.pointer.isFocus){
+							//destroyPanel();
+							cancelFocus();
+						}
+					}
+				},
+				/*areaselect:{
+					mousedown:function(e){
+						if(e.originalPoint!=null){
+							var geometry = new THREE.BoxBufferGeometry( 1, 1, 20 );
+							var edges = new THREE.EdgesGeometry(geometry);
+							var mesh = new THREE.LineSegments( edges, new THREE.LineBasicMaterial( { color: 0xcccccc } ) );
+							mesh.objectType='areaselect';
+							mesh.position.y=geometry.parameters.depth/2;
+							mesh.position.x=e.originalPoint.x;
+							mesh.position.z=e.originalPoint.y;
+							scene.add( adjust(mesh) );
+							datumObject=mesh;
+						}
+					},
+					mousemove:function(e){
+						if(e.originalPoint!=null){
+							var p=getGroundPoint(e);
+							if(p!=null){
+								var width=p.x-e.originalPoint.x;
+								var height=p.y-e.originalPoint.y;
+								datumObject.position.x=e.originalPoint.x+width/2;
+								datumObject.position.z=e.originalPoint.y+height/2;
+								datumObject.scale.set(width,height,1);
+								getAreaObject(e.originalPoint,p);
+							}
+							return false;
+						}
+					},
+					mouseup:function(){
+						scene.remove(datumObject);
+	                	datumObject=null;
+	                	menuState.mode='pointer';
+					}
+				},*/
+				polygon:{
+					mousedown:function(e){
+						if(e.originalPoint!=null){
+							if(datumObject==null){
+								datumObject=new ThreeMap.Polygon();
+								datumObject.create();
+								datumObject.update({position:{x:e.originalPoint.x,y:e.originalPoint.z-datumObject.objectArea.y.min,z:e.originalPoint.y}});
+							}
+							else if(e.button==0){
+								//datumObject.params.region.push('L,'+(e.originalPoint.x-datumObject.params.position.x)+','+(-e.originalPoint.y+datumObject.params.position.z));
+								datumObject.params.region.push(datumObject.params.region[datumObject.params.region.length-1]);
+								datumObject.update({region:datumObject.params.region});
+							}
+							else if(e.button==2){
+								datumObject=null;
+								menuState.mode='pointer';
+							}
+						}
+					},
+					mousemove:function(e){
+						if(datumObject!=null){
+							var p=getGroundPoint(e);
+							if(p!=null){
+								datumObject.params.region[datumObject.params.region.length-1]='L,'+(p.x-datumObject.params.position.x)+','+(-p.y+datumObject.params.position.z);
+								datumObject.update({region:datumObject.params.region});
+							}
+							return false;
+						}
+					},
+					mouseup:function(){}
+				},
+				path:{
+					mousedown:function(e){
+						if(e.originalPoint!=null){
+							if(datumObject==null){
+								datumObject=new ThreeMap.Path();
+								datumObject.params.path.push([e.originalPoint.x,e.originalPoint.z,e.originalPoint.y]);
+								datumObject.params.path.push([e.originalPoint.x,e.originalPoint.z,e.originalPoint.y]);
+								datumObject.create();
+								//datumObject.update({position:{x:e.originalPoint.x,y:e.originalPoint.z-datumObject.objectArea.y.min,z:e.originalPoint.y}});
+							}
+							else if(e.button==0){
+								datumObject.params.path.push(datumObject.params.path[datumObject.params.path.length-1]);
+								datumObject.update({path:datumObject.params.path});
+							}
+							else if(e.button==2){
+								datumObject=null;
+								menuState.mode='pointer';
+							}
+						}
+					},
+					mousemove:function(e){
+						if(datumObject!=null){
+							var p=getGroundPoint(e);
+							if(p!=null){
+								datumObject.params.path[datumObject.params.path.length-1]=[p.x,p.z,p.y];
+								datumObject.update({path:datumObject.params.path});
+							}
+							return false;
+						}
+					},
+					mouseup:function(){}
+				},
+				rect:{
+					mousedown:function(e){
+						if(e.originalPoint!=null){
+							datumObject=new ThreeMap.Rect({depth:30});
+							datumObject.create();
+							datumObject.update({position:{x:e.originalPoint.x,y:e.originalPoint.z-datumObject.objectArea.y.min,z:e.originalPoint.y}});
+						}
+					},
+					mousemove:function(e){
+						if(e.originalPoint!=null){
+							var p=getGroundPoint(e,datumObject);
+							if(p!=null){
+								var width=p.x-e.originalPoint.x;
+								var height=p.y-e.originalPoint.y;
+								
+								datumObject.update({width:width,height:height,position:{x:e.originalPoint.x+width/2,z:e.originalPoint.y+height/2}});
+							}
+							return false;
+						}
+					},
+					mouseup:function(){
+						datumObject=null;
+						menuState.mode='pointer';
+					}
+				},
+				circle:{
+					mousedown:function(e){
+						if(e.originalPoint!=null){
+							datumObject=new ThreeMap.Circle();
+							datumObject.create();
+							datumObject.update({position:{x:e.originalPoint.x,y:e.originalPoint.z-datumObject.objectArea.y.min,z:e.originalPoint.y}});
+						}
+					},
+					mousemove:function(e){
+						if(e.originalPoint!=null){
+							var p=getGroundPoint(e,datumObject);
+							if(p!=null){
+								var width=p.x-e.originalPoint.x;
+								var height=p.y-e.originalPoint.y;
+								width=Math.min(width,height);
+								datumObject.update({width:width,position:{x:e.originalPoint.x+width/2,z:e.originalPoint.y+width/2}});
+							}
+							return false;
+						}
+					},
+					mouseup:function(){
+						datumObject=null;
+						menuState.mode='pointer';
+					}
+				},
+				model:{
+					mousedown:function(){},
+					mousemove:function(e){
+						var p=getGroundPoint(e);
+						if(p!=null){
+							if(datumObject==null){
+								datumObject=new ThreeMap.Model({modelName:menuBench.modelName});
+								datumObject.create();
+							}
+							datumObject.update({position:{x:p.x,y:p.z-datumObject.objectArea.y.min,z:p.y}});
+						}
+					},
+					mouseup:function(e){
+						if(e.isClick){
+							datumObject=null;
+							menuState.mode='pointer';
+						}
+					}
+				},
+				hole:{
+					mousedown:function(){},
+					mousemove:function(e){
+						/*var p=getGroundPoint(e,datumObject);
+						if(p!=null){
+							if(datumObject==null){
+								datumObject=new ThreeMap.Rect({height:10,width:10,depth:10});
+								datumObject.create();
+							}
+							datumObject.update({position:{x:p.x,y:p.z,z:p.y}});
+						}*/
+						var p=getGroundPoint(e,datumObject);
+						if(p!=null&&focusObjects.length!=0){
+							var focus=focusObjects[0].objectClass;
+							if(Math.abs(p.x-focus.params.position.x)<=focus.params.width/2+focus.params.round.radius &&
+								Math.abs(p.z-focus.params.position.y)<=focus.params.depth &&
+								Math.abs(p.y-focus.params.position.z)<=focus.params.height/2+focus.params.round.radius
+							){
+								var holes=focus.params.holes;
+								var hole={height:12,width:12,depth:12,position:{
+									x:p.x-focus.params.position.x,y:12/*p.z-focus.params.position.y*/,z:p.y-focus.params.position.z
+								}};
+								
+								if(menuState.holeModelName=='door'){
+									common.combineParams(hole,{
+										//width:7.6,height:5,depth:21,
+										width:7.6,height:7.6,depth:21,
+										position:{y:0}
+									});
+								}
+								
+								if(datumObject==null){
+									datumObject=new ThreeMap.Model({position:{x:p.x,y:p.z,z:p.y},modelName:menuState.holeModelName});
+									datumObject.create();
+									holes.push(hole);
+								}
+								else{
+									holes[holes.length-1]=hole;
+								}
+								
+								var colPoint={x:p.x,y:p.z,z:p.y};
+								//翻转
+								var loc={
+									x:{min:focus.params.position.x+focus.objectArea.x.min,
+										mid:0,
+										max:focus.params.position.x+focus.objectArea.x.max},
+									z:{min:focus.params.position.z+focus.objectArea.z.min,
+										mid:0,
+										max:focus.params.position.z+focus.objectArea.z.max},
+								};
+								
+								loc.x.mid=(loc.x.min+loc.x.max)/2;
+								loc.z.mid=(loc.z.min+loc.z.max)/2;
+								
+								var offset=6;
+								var params={};
+								
+								if(colPoint.x<=loc.x.min || colPoint.x>loc.x.max-offset&&colPoint.x<loc.x.max){//左
+									params={position:{x:colPoint.x-datumObject.objectArea.x.min/2,y:colPoint.y,z:colPoint.z},rotation:{y:-90}};
+									if(menuState.holeModelName=='door')
+										params.position.x=colPoint.x-datumObject.objectArea.x.min*2;
+								}
+								else if(colPoint.x>=loc.x.max || colPoint.x<loc.x.min+offset&&colPoint.x>loc.x.min){//右
+									params={position:{x:colPoint.x+datumObject.objectArea.x.min/2,y:colPoint.y,z:colPoint.z},rotation:{y:90}};
+									if(menuState.holeModelName=='door')
+										params.position.x=colPoint.x+datumObject.objectArea.x.min*2;
+								}
+								else if(colPoint.z<=loc.z.min || colPoint.z>loc.z.max-offset&&colPoint.z<loc.z.max){//前
+									params={position:{x:colPoint.x,y:colPoint.y,z:colPoint.z-datumObject.objectArea.z.min/2},rotation:{y:180}};
+									if(menuState.holeModelName=='door')
+										params.position.z=colPoint.z-datumObject.objectArea.z.min*2;
+								}
+								else if(colPoint.z>=loc.z.max || colPoint.z<loc.z.min+offset&&colPoint.z>loc.z.min){//后
+									params={position:{x:colPoint.x,y:colPoint.y,z:colPoint.z+datumObject.objectArea.z.min/2},rotation:{y:0}};
+									if(menuState.holeModelName=='door')
+										params.position.z=colPoint.z+datumObject.objectArea.z.min*2;
+								}
+								else{
+									datumObject.remove();
+									datumObject=null;
+									focus.params.holes.splice(-1);
+									focus.update({holes:focus.params.holes});
+									return;
+								}
+								
+								
+								//params.position.z+=datumObject.objectArea.z.min/2;
+								if(menuState.holeModelName=='door'){
+									//common.combineParams(position,{y:0});
+									params.position.y=0;
+								}
+								else{
+									params.position.y=12;
+								}
+								datumObject.update(params);
+								
+								focus.update({holes:holes});
+							}
+							else if(datumObject!=null){
+								datumObject.remove();
+								datumObject=null;
+								focus.params.holes.splice(-1);
+								focus.update({holes:focus.params.holes});
+							}
+						}
+					},
+					mouseup:function(e){
+						if(e.isClick){
+							datumObject=null;
+							//menuState.mode='pointer';
+						}
+					}
+				},
+			};
+			
+			function cancelFocus(){
+				//outlinePass.selectedObjects=[];
+				//focusObjects=[];
+				
+				selectObjects();
+			}
+			
+			function selectObjects(focuses){
+				if(focuses==undefined){
+					focuses=[];
+				}
+				outlinePass.selectedObjects=[];
+				focusObjects=[];
+				for(var i=0;i<focuses.length;i++){
+					outlinePass.selectedObjects.push(focuses[i].object);
+					focusObjects.push(focuses[i].object);
+				}
+				if(focuses.length==1){
+					var focus=focuses[0];
+					createPanel(focus.guiParams,focus.params,focus);
+				}
+				else{
+					destroyPanel();
+				}
+				
+				for(var i=0;i<menuState.objectList.length;i++){
+					var selected=false;
+					for(var f=0;f<focuses.length;f++){
+						if(focuses[f]==objectList[i]){
+							selected=true;
+							menuState.holeList=objectList[i].params.holes;
+							break;
+						}
+					}
+					menuState.objectList[i].selected=selected;
+				}
+				
+				if(focuses.length==0){
+					menuState.holeList=[];
+				}
+			}
+			
+            function initThree() {
+                width = document.getElementById('canvas-frame').clientWidth;
+                height = document.getElementById('canvas-frame').clientHeight;
+                renderer = new THREE.WebGLRenderer({
+                    antialias: true
+                });
+                renderer.setSize(width, height);
+                renderer.domElement.id='canvas';
+                document.getElementById('canvas-frame').appendChild(renderer.domElement);
+                //renderer.setClearColor(0x222222, 1.0);
+                renderer.setClearColor(0xace4ff, 0.3);
+                
+                labelRenderer = new THREE.CSS2DRenderer();
+				labelRenderer.setSize( width, height );
+				labelRenderer.domElement.style.position = 'absolute';
+				labelRenderer.domElement.style.top = 0;
+				labelRenderer.domElement.style.background='transparent';
+				document.getElementById('canvas-frame').appendChild( labelRenderer.domElement );
+                
+                window.addEventListener( 'resize', onWindowResize, false );
+                
+                loadOBJModel('bed',function(object){
+                	object.scale.multiplyScalar(0.01);
+                	object.traverse( function ( child ) {
+				        if ( child instanceof THREE.Mesh ) { }
+				    });
+                },'bed');
+                /*loadOBJModel('door',function(object){
+                	object.scale.multiplyScalar(1);
+                	object.traverse( function ( child ) {
+				        if ( child instanceof THREE.Mesh ) { }
+				    });
+                });*/
+                loadOBJModel('internalscreen',function(object){
+                	object.scale.multiplyScalar(0.01);
+                	object.traverse( function ( child ) {
+				        if ( child instanceof THREE.Mesh ) { }
+				    });
+                });
+                loadOBJModel('externalscreen',function(object){
+                	object.scale.multiplyScalar(0.01);
+                	object.traverse( function ( child ) {
+				        if ( child instanceof THREE.Mesh ) { }
+				    });
+                });
+                loadOBJModel('tv',function(object){
+                	object.scale.multiplyScalar(0.01);
+                	object.traverse( function ( child ) {
+				        if ( child instanceof THREE.Mesh ) { }
+				    });
+                });
+                /*loadOBJModel('camera',function(object){
+                	object.traverse( function ( child ) {
+				        if ( child instanceof THREE.Mesh ) {
+			                child.material=new THREE.MeshLambertMaterial({color: 0xFFFFFF});
+				        }
+				    });
+            	});
+                loadFBXModel('tree',function(object){
+                	object.traverse( function ( child ) {
+				        if ( child instanceof THREE.Mesh ) {
+				        	child.material=new THREE.MeshLambertMaterial({color: 'green'});
+				        }
+				    });
+            	});*/
+            	
+            	loadTexture('grass',function(texture){
+                	texture.repeat.set( 0.018, 0.018 );
+                });
+                
+                loadTexture('wall',function(texture){
+                	texture.repeat.set( 0.038, 0.038 );
+                });
+                
+                loadTexture('stone',function(texture){
+                	texture.repeat.set( 0.168, 0.168 );
+                });
+                
+                loadTexture('chimney',function(texture){
+                	texture.repeat.set( 0.018, 0.018 );
+                });
+                
+                loadTexture('brick.png');
+                loadTexture('black');
+                loadTexture('floor');
+                loadTexture('outwall');
+                loadTexture('roof');
+			}
+
+			function onWindowResize() {
+				width = document.getElementById('canvas-frame').clientWidth;
+                height = document.getElementById('canvas-frame').clientHeight;
+                //width=window.innerWidth;
+                //height=window.innerHeight;
+				
+				camera.aspect = width / height;
+				camera.updateProjectionMatrix();
+				planformCamera.left = -width / 2;
+				planformCamera.right = width / 2;
+				planformCamera.top = height / 2;
+				planformCamera.bottom = -height / 2;
+				planformCamera.updateProjectionMatrix();
+				renderer.setSize( width, height );
+				labelRenderer.setSize( width, height );
+				//effectFXAA.uniforms[ 'resolution' ].value.set( 1 / window.innerWidth, 1 / window.innerHeight );
+				//outlinePass = new THREE.OutlinePass( new THREE.Vector2( window.innerWidth, window.innerHeight ), scene, planformCamera );
+			}
+            
+            function initMouseEvent(){
+            	
+	            var isClick=true;
+	            var originalPoint;
+	            var mousePosition=[];
+	            
+	            $(renderer.domElement.parentElement).mousedown(function (e) {
+	            	//console.log(e);
+	            	//console.log(e.offsetX+','+e.offsetY+','+e.clientX+','+e.clientY+'|'+e.pageX+','+e.pageY+','+e.screenX+','+e.screenY);
+	            	
+	            	isClick=true;
+	            	originalPoint=getGroundPoint(e);
+	            	e.originalPoint=originalPoint;
+	            	mousePosition=[e.clientX,e.clientY];
+            		return mouseEvents[menuState.mode].mousedown(e);
+	            }).mousemove(function (e) {
+	            	if(e.clientX!=mousePosition[0]||e.clientY!=mousePosition[1]){
+	            		isClick=false;
+	            		mousePosition=[-1,-1];
+	            	}
+	            	e.originalPoint=originalPoint;
+	            	return mouseEvents[menuState.mode].mousemove(e);
+	            }).mouseup(function (e) {
+	            	e.isClick=isClick;
+	            	originalPoint=null;
+	            	return mouseEvents[menuState.mode].mouseup(e);
+	            });
+	            
+	            $(document).keydown(function(event){
+	            	var key=event.key;
+	            	if(key=='Delete'){
+	            		deleteFocusObjects();
+	            	}
+	            	else if(event.keyCode==86&&event.ctrlKey==true){
+	            		cloneObjects();
+	            	}
+	            });
+            }
+
+			function deleteFocusObjects(){
+				for(var i=0;i<focusObjects.length;i++){
+					//scene.remove(focusObjects[i]);
+					focusObjects[i].objectClass.remove();
+				}
+				outlinePass.selectedObjects=[];
+				focusObjects=[];
+			}
+			
+			function cloneObjects(){
+				for(var i=0;i<focusObjects.length;i++){
+					var obj=focusObjects[i].objectClass;
+					var pas=obj.params;
+					var object=new ThreeMap[pas.type](pas);
+					object.create();
+					object.update({position:{x:0,y:0,z:0}});
+				}
+			}
+			
+			function getGroundPoint(event,exclude=[]){
+				if(!Array.isArray(exclude)){
+					exclude=[exclude];
+				}
+				
+				var result;
+				var mouse=new THREE.Vector2();
+            	mouse.x = (event.offsetX / renderer.getSize().width) * 2 - 1;
+				mouse.y = -(event.offsetY / renderer.getSize().height) * 2 + 1;
+            	//mouse.x = (event.clientX / renderer.getSize().width) * 2 - 1;
+				//mouse.y = -(event.clientY / renderer.getSize().height) * 2 + 1;
+				raycaster.setFromCamera(mouse,menuState.is3D?camera:planformCamera);
+
+				var intersects = raycaster.intersectObjects(scene.children);
+				for(var i=0;i<intersects.length;i++){
+					var objectType=intersects[i].object.objectType;
+					if(exclude.indexOf(intersects[i].object)==-1&&focusObjects.indexOf(intersects[i].object)==-1&&
+						(objectType=='object'||objectType=='ground')){
+						var point=intersects[i].point;
+						result={x:point.x,y:point.z,z:point.y};
+						break;
+					}
+				}
+				return result;
+			}
+			
+			function getFocusObject(event){
+				var mouse=new THREE.Vector2();
+            	mouse.x = (event.offsetX / renderer.getSize().width) * 2 - 1;
+				mouse.y = -(event.offsetY / renderer.getSize().height) * 2 + 1;
+				raycaster.setFromCamera(mouse,menuState.is3D?camera:planformCamera);
+
+				var intersects = raycaster.intersectObjects(scene.children,true);
+				var focusObject;
+				if(intersects.length>0){
+					var obj=intersects[0].object;
+					if(obj.parent.parent!=null){
+						obj=obj.parent;
+					}
+					if(obj.objectType=='object'){
+						focusObject=obj;
+					}
+				}
+				return focusObject;
+			}
+
+            var camera;
+            var planformCamera;
+            var orbitctrl;
+            var planformOrbitctrl;
+            function initCamera() {
+                planformCamera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, 1, 10000);
+                planformCamera.position.x = 0;
+                planformCamera.position.y =	1000;
+                planformCamera.position.z = 0;
+                
+                camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
+                camera.position.x = 0;
+                camera.position.y =	1000;
+                camera.position.z = 1000;
+                /*camera.up.x = 0;
+                camera.up.y = 1;
+                camera.up.z = 0;
+                camera.lookAt({
+                    x: 0,
+                    y: 0,
+                    z: 0
+                });*/
+                
+                //orbitctrl = new THREE.OrbitControls(camera,document.getElementById('canvas-frame'));
+                orbitctrl = new THREE.OrbitControls(camera,renderer.domElement.parentElement);
+                orbitctrl.mouseButtons.LEFT=THREE.MOUSE.RIGHT;
+                orbitctrl.mouseButtons.RIGHT=THREE.MOUSE.LEFT;
+                orbitctrl.zoomSpeed=2;
+                
+                planformOrbitctrl = new THREE.OrbitControls(planformCamera,renderer.domElement.parentElement);
+                planformOrbitctrl.enabled=false;
+                planformOrbitctrl.enableRotate=false;
+                planformOrbitctrl.mouseButtons.LEFT=THREE.MOUSE.RIGHT;
+                planformOrbitctrl.mouseButtons.RIGHT=THREE.MOUSE.LEFT;
+                planformOrbitctrl.zoomSpeed=2;
+            }
+
+            var scene;
+            var transformControl;
+            var composer;
+            var outlinePass;
+            var renderPass;
+            function initScene() {
+                scene = new THREE.Scene();
+                
+                composer = new THREE.EffectComposer( renderer );
+				renderPass = new THREE.RenderPass( scene, menuState.is3D?camera:planformCamera );
+				composer.addPass( renderPass );
+
+				//outlinePass = new THREE.OutlinePass( new THREE.Vector2( window.innerWidth, window.innerHeight ), scene, menuState.is3D?camera:planformCamera );
+				outlinePass = new THREE.OutlinePass( new THREE.Vector2( window.innerWidth, window.innerHeight ), scene, planformCamera );
+				outlinePass.selectedObjects = [];
+				composer.addPass( outlinePass );
+
+				effectFXAA = new THREE.ShaderPass( THREE.FXAAShader );
+				effectFXAA.uniforms[ 'resolution' ].value.set( 1 / window.innerWidth, 1 / window.innerHeight );
+				//effectFXAA.uniforms[ 'resolution' ].value.set( 0.3 / window.innerWidth, 0.3 / window.innerHeight );
+				
+				effectFXAA.renderToScreen = true;
+				composer.addPass( effectFXAA );
+            }
+
+            var light;
+            function initLight() {
+                //light = new THREE.DirectionalLight(0xFFFFFF, 1.0);
+
+				light=new THREE.PointLight( 0xFFFFFF, 0.7, 0);
+				light.position.set( 0, 1000, 0 );
+                scene.add(light);
+                
+				var pointLightHelper = new THREE.PointLightHelper( light, 10 );
+				scene.add( pointLightHelper );
+				
+				var light = new THREE.AmbientLight( 0xffffff,0.5 ); // soft white light
+				scene.add(light);
+            }
+
+			var modelsCallback={};
+			var models={};
+			var modelsParams={};
+			function getModel(name,params,callback){
+				if(modelsCallback[name]==undefined){
+					modelsCallback[name]=[];
+				}
+				if(models[name]==undefined){
+					modelsCallback[name].push({params:params,callback:callback});
+				}
+				else{
+					callback(models[name].clone());
+				}
+			}
+			
+			var textures={};
+			var loadTexture=function(name,callback){
+				var textureLoader=new THREE.TextureLoader();
+				textures[name]=textureLoader.load('models/'+name+(name.indexOf('.')==-1?'.jpg':''));
+				textures[name].wrapS = textures[name].wrapT = THREE.RepeatWrapping;
+				//magFilter
+				//textures[name].magFilter = THREE.NearestFilter;
+				if(callback!=undefined){
+					callback(textures[name]);
+				}
+			}
+			
+			function loadOBJModel(name,transform,asname){
+				var mtlLoader=new THREE.MTLLoader();
+				var objLoader=new THREE.OBJLoader();
+				if(asname==null){
+					asname=name;
+				}
+				mtlLoader.setPath('models/'+name+'/')
+				.load( name+'.mtl', function ( materials ) {
+					materials.preload();
+					objLoader.setMaterials(materials)
+						.setPath( 'models/'+name+'/' )
+						.load( name+'.obj', function ( object ) {
+							transform(object);
+							models[asname]=object.clone();
+							modelsParams[asname]={area:getObjectArea(models[asname])};
+					});
+				});
+			}
+			
+			function loadFBXModel(name,transform){
+				var fbxLoader = new THREE.FBXLoader();
+				fbxLoader.load('models/'+name+'/'+name+'.fbx',function(object){
+					transform(object);
+					models[name]=object.clone();
+					modelsParams[name]={area:getObjectArea(models[name])};
+				});
+			}
+			
+			function createPanel(config,params,object){
+				if(paramsPanel!=null){
+					paramsPanel.destroy();
+				}
+				paramsPanel=new dat.GUI({width:310});
+				var settings={};
+				for(var i=0;i<config.length;i++){
+					for(var s=0;s<config[i].settings.length;s++){
+						var setting=config[i].settings[s];
+						var arr=setting.field.split('.');
+						var tmp=params;
+						for(var t=0;t<arr.length;t++){
+							tmp=tmp[arr[t]];
+						}
+						settings[setting.text]=tmp;
+					}
+				};
+				for(var i=0;i<config.length;i++){
+					var folder=paramsPanel.addFolder(config[i].text);
+					for(var s=0;s<config[i].settings.length;s++){
+						let setting=config[i].settings[s];
+						if(setting.step==null){
+							setting.step=1;
+						}
+						if(setting.items!=null){
+							folder.add( settings, setting.text, setting.items).onChange(function(value){
+								var sp={};
+								
+								var arr=setting.field.split('.');
+								var tmp=sp;
+								for(var t=0;t<arr.length;t++){
+									if(t==arr.length-1){
+										tmp[arr[t]]=value;
+									}
+									else{
+										tmp[arr[t]]={};
+										tmp=tmp[arr[t]];
+									}
+								}
+								//console.log(sp);
+								object.update(sp);
+							});
+						}
+						else{
+							folder.add( settings, setting.text, setting.min, setting.max, setting.step )//.listen()
+							.onChange(function(value){
+								var sp={};
+								
+								var arr=setting.field.split('.');
+								var tmp=sp;
+								for(var t=0;t<arr.length;t++){
+									if(t==arr.length-1){
+										tmp[arr[t]]=value;
+									}
+									else{
+										tmp[arr[t]]={};
+										tmp=tmp[arr[t]];
+									}
+								}
+								object.update(sp);
+							});
+						}
+					}
+					folder.open();
+				};
+			}
+			
+			function destroyPanel(){
+				if(paramsPanel!=null){
+					paramsPanel.destroy();
+				}
+				paramsPanel=null;
+			}
+
+			var path;
+
+            function initObject() {
+                var axisHelper = new THREE.AxesHelper(1000);
+       			scene.add(axisHelper);
+       			
+       			var geometry = new THREE.PlaneGeometry( 2000, 2000);
+				var material = new THREE.MeshBasicMaterial( {color: 0xbbbbbb, side: THREE.DoubleSide,opacity: 0.01,transparent: true } );
+				var ground = new THREE.Mesh( geometry, material );
+				ground.objectType='ground';
+				scene.add(adjust(ground));
+       			
+       			//var helper = new THREE.GridHelper( 2000, 100 );
+				//helper.material.opacity = 0.35;
+				//helper.material.transparent = true;
+				//scene.add(helper);
+				
+				outlinePass.renderCamera=menuState.is3D?camera:planformCamera;
+            }
+            
+			function adjust(object){
+				return object.rotateOnAxis(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+			}
+			
+			function animation() {
+				
+				/*for(var i=0;i<objectList.length;i++){
+					if(objectList[i].move!=null){
+						objectList[i].move();
+					}
+				}*/
+				
+                composer.render();
+                //renderer.render(scene, menuState.is3D?camera:planformCamera);
+                labelRenderer.render(scene, menuState.is3D?camera:planformCamera);
+                requestAnimationFrame(animation);
+            }
+			
+			function initTest(){
+			}
+			
+			function threeStart() {
+                initThree();
+                initMouseEvent();
+                initCamera();
+                initScene();
+                initLight();
+                
+                _loadCustomModels();
+                
+                setTimeout(function(){
+                	initObject();
+                	animation();
+                	//initTest();
+                	menuBench.operateObject('load');
+                },1000);
+                
+                /*let loader = new THREE.GLTFLoader();
+                loader.load('models/fire/EA260A89C3ACE809C66D7C2C0EA035F7.gltf',function (obj) {
+					console.log(obj);
+					obj.scene.position.y = 10;
+					scene.add(obj.scene);
+				});*/
+            }
+            
+            threeStart();
+		</script>
+	</body>
+</html>

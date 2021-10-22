@@ -1,0 +1,1899 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="renderer" content="webkit">
+		<title>警用实战平台</title>
+		<style>
+			html,
+			body {
+				margin: 0;
+				height: 100%;
+			}
+
+			body {
+				overflow: hidden;
+			}
+
+			.main {
+				height: 100%;
+			}
+
+			#canvas-frame {
+				/*background:#d5d4d4;*/
+				background: #9BC0FB;
+				height: 100%;
+				width: 100%;
+			}
+
+			::-webkit-scrollbar {
+				width: 5px;
+				height: 5px;
+			}
+
+			::-webkit-scrollbar-thumb {
+				box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+				background: #272f3e;
+			}
+
+			.blockborder {
+				background: rgba(52, 62, 80, .9);
+				border-radius: 3px;
+				padding: 10px 0;
+			}
+
+			.blockborder>.title {
+				background: linear-gradient(90deg, rgba(29, 34, 43, 1) 0%, rgba(52, 62, 80, 0) 80%);
+				color: #E1E1E1;
+				padding: 5px 10px;
+				margin: 0 10px 10px 10px;
+				opacity: 0.8;
+				font-size: 16px;
+				display: flex;
+				align-items: center;
+			}
+
+			.blockborder>.title>img {
+				margin-right: 15px;
+				margin-left: 5px;
+				object-fit: contain;
+				width: 18px;
+				height: 18px;
+			}
+
+			.blockborder>.content {}
+
+			.logo {
+				right: -2px;
+				bottom: 8px;
+				position: absolute;
+				margin-left: 36px;
+				background-image: url(img/logo-han.png);
+				background-size: contain;
+				width: 93px;
+				height: 28px;
+				background-repeat: no-repeat;
+			}
+
+			.topmenu {
+				position: absolute;
+				z-index: 1000;
+				right: 10px;
+				top: 10px;
+				padding: 0;
+			}
+
+			.topmenu>.info {
+				font-size: 16px;
+				display: flex;
+				color: white;
+			}
+
+			.topmenu>.info>span {
+				display: flex;
+				align-items: center;
+				padding: 10px;
+			}
+
+			.topmenu>.info .icon {
+				background-size: contain;
+				width: 20px;
+				height: 20px;
+				background-repeat: no-repeat;
+				display: flex;
+				margin-right: 9px;
+			}
+
+			.topmenu>.info .icon-person {
+				background-image: url(img/person.png);
+			}
+
+			.topmenu>.info .icon-time {
+				background-image: url(img/time.png);
+			}
+
+			.topmenu>.info>.account {}
+
+			.topmenu>.info>.time {
+				margin-left: 10px;
+			}
+
+			.leftmenu {
+				width: 320px;
+				position: absolute;
+				/*top:66px;*/
+				top: 11px;
+				left: 10px;
+				z-index: 1000;
+				display: flex;
+			}
+
+			.leftmenuframe {
+				display: flex;
+				flex-direction: column;
+				background: rgba(52, 62, 80, .7);
+				padding: 5px;
+				padding-bottom: 0;
+				width: 100%;
+				padding-top: 0;
+			}
+
+			.leftmenuframe.fold {}
+
+			.leftmenuframe>.infos {
+				transition: height .5s;
+				overflow: hidden;
+			}
+
+			.leftmenuframe>.infos>.line {
+				height: 5px;
+			}
+
+			.leftmenuframe .shorttitle {
+				color: #E1E1E1;
+				display: flex;
+				padding: 3px 0;
+			}
+
+			.leftmenuframe .shorttitle .new {
+				background: #CC0000;
+				display: flex;
+				align-items: center;
+				font-size: 12px;
+				border-radius: 50%;
+				position: absolute;
+				left: 15px;
+				top: 0;
+			}
+
+			.leftmenuframe .shorttitle>span {
+				display: flex;
+				align-items: center;
+				margin-right: 40px;
+				position: relative;
+			}
+
+			.leftmenuframe .shorttitle>span>img {
+				object-fit: contain;
+				height: 18px;
+				width: 18px;
+				margin-left: 5px;
+				margin-right: 15px;
+			}
+
+			.leftmenuframe .today {
+				height: 234px;
+				border-radius: 0;
+			}
+
+			.leftmenuframe .today>.content {
+				display: flex;
+				flex-wrap: wrap;
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				white-space: nowrap;
+			}
+
+			.leftmenuframe .today .item {
+				width: 101px;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				margin: 7px 0;
+				margin-bottom: 11px;
+			}
+
+			.leftmenuframe .today .item>img {
+				object-fit: contain;
+				height: 34px;
+				width: 34px;
+			}
+
+			.leftmenuframe .today .item>.name {
+				color: #E1E1E1;
+				margin-bottom: 4px;
+				font-size: 12px;
+			}
+
+			.leftmenuframe .today .item>.num {
+				color: #E1E1E1;
+				font-size: 22px;
+			}
+
+			.leftmenuframe .message {
+				flex-grow: 1;
+				margin-top: 8px;
+				border-radius: 0;
+			}
+
+			.leftmenuframe .message>.content {
+				overflow: hidden;
+			}
+
+			.leftmenuframe .message>.content:hover {
+				overflow: overlay;
+			}
+
+			.leftmenuframe .message .item {
+				display: flex;
+				font-size: 15px;
+				align-items: center;
+				margin: 10px;
+				color: #B4B4B4;
+			}
+
+			.leftmenuframe .message .item.new {
+				color: white;
+			}
+
+			.leftmenuframe .message .item img {
+				width: 18px;
+				height: 18px;
+			}
+
+			.leftmenuframe .message .item>.icon {
+				background-image: url(img/warning-dark.png);
+				background-size: contain;
+				width: 18px;
+				height: 16px;
+				background-repeat: no-repeat;
+				margin-right: 10px;
+			}
+
+			.leftmenuframe .message .item.new>.icon {
+				background-image: url(img/warning-light.png);
+			}
+
+			.leftmenuframe .message .item>.infos {
+				display: flex;
+				flex-direction: column;
+				flex-grow: 1;
+			}
+
+			.leftmenuframe .message .item>.infos>div {
+				display: flex;
+				justify-content: space-between;
+				margin-bottom: 2px;
+			}
+
+			.leftmenuframe .message .item>.infos>div>.location {
+				font-weight: bold;
+				color: #a4752b;
+			}
+
+			.leftmenuframe .message .item.new>.infos>div>.location {
+				color: #FFA10C;
+			}
+
+			.leftmenuframe .message .item>.infos>div>.time {
+				font-size: 12px;
+			}
+
+			.leftmenuframe .message .item>.infos>div>.reason {
+				font-size: 12px;
+				width: 190px;
+				overflow: hidden;
+				white-space: nowrap;
+				text-overflow: ellipsis;
+			}
+
+			.leftmenuframe .message .item>.infos>div>.view {
+				font-size: 12px;
+				color: #608ac7;
+				cursor: pointer;
+			}
+
+			.leftmenuframe .message .item.new>.infos>div>.view {
+				color: #3385ff;
+			}
+
+			.leftmenuframe>.foldblock {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				padding: 5px;
+			}
+
+			.leftmenuframe>.foldblock>.fold {
+				height: 14px;
+				width: 16px;
+				background-image: url(img/fold.png);
+				background-size: contain;
+				background-repeat: no-repeat;
+				transition: transform .5s;
+			}
+
+			.objectlabel {
+				display: flex;
+				margin-top: 6px;
+				margin-left: -6px;
+				flex-direction: column;
+			}
+
+			.objectlabel>.dialog {
+				margin-left: 20px;
+				background: rgba(52, 62, 80, .8);
+				border-radius: 3px;
+				padding: 1px;
+			}
+
+			.objectlabel .tagging {
+				background: url(img/at.png);
+				height: 37px;
+				order: 1;
+			}
+
+			.objectlabel.left {
+				margin-left: 6px;
+			}
+
+			.objectlabel.left>.tagging {
+				transform: rotateY(180deg);
+			}
+
+			.objectlabel.left>.dialog {
+				margin-left: 0;
+				margin-right: 20px;
+			}
+
+			.objectlabel.bottom {
+				margin-top: -6px;
+			}
+
+			.objectlabel.bottom>.tagging {
+				transform: rotateX(180deg);
+				order: 0;
+			}
+
+			.objectlabel.left.bottom>.tagging {
+				transform: rotateY(180deg) rotateX(180deg);
+			}
+
+			.objectlabel>.dialog>.border {
+				padding: 5px 10px;
+				border: 1px solid #dddddd77;
+				border-radius: 2px;
+			}
+
+			.objectlabel>.dialog>.border>.text {
+				color: #fff;
+				line-height: 1.6;
+			}
+
+			.objectlabel .actionbutton {
+				margin: 2px 0;
+				font-weight: bold;
+			}
+
+			.menubench {
+				position: absolute;
+				z-index: 1000;
+				left: 10px;
+				top: 10px;
+				display: flex;
+				width: 310px;
+				align-items: center;
+				justify-content: center;
+				background: rgba(52, 62, 80, .7);
+				padding: 5px;
+			}
+
+			.menubench>a {
+				display: flex;
+				flex-direction: column;
+				flex-grow: 1;
+				align-items: center;
+				justify-content: center;
+				padding: 7px 0;
+				background: rgba(52, 62, 80, .7);
+				margin-right: 1px;
+				padding-bottom: 25px;
+				cursor: pointer;
+			}
+
+			.menubench>a>.icon {
+				background-image: url(img/compass.png);
+				background-size: contain;
+				width: 12px;
+				height: 12px;
+				background-repeat: no-repeat;
+			}
+
+			.menubench>a>.text {
+				font-size: 12px;
+				color: white;
+				/*transform:scale(.5);white-space:nowrap;*/
+				position: absolute;
+				top: 28px;
+				font-weight: lighter;
+			}
+
+			.menubench>a.state {
+				background: rgba(52, 62, 80, .3);
+				transition: background .5s
+			}
+
+			.menubench>a.selected {
+				background: rgba(52, 62, 80, 1);
+			}
+
+			.menubench>.new {
+				border-radius: 30px;
+				background: #DF361B;
+				height: 16px;
+				width: 16px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				margin-left: 2px;
+			}
+
+			.menubench>.new>span {
+				font-size: 20px;
+				color: white;
+				transform: scale(.5);
+			}
+
+			.dimension {
+				position: absolute;
+				z-index: 1000;
+				right: 10px;
+				top: 122px;
+				display: flex;
+				flex-direction: column;
+			}
+
+			.dimension>a {
+				margin-bottom: 13px;
+				background: rgba(52, 62, 80, .4);
+				font-size: 16px;
+				padding: 6px 19px;
+				color: white;
+				border-radius: 6px;
+				cursor: pointer;
+				transition: background .5s
+			}
+
+			.dimension .selected {
+				background: rgba(52, 62, 80, .9);
+				cursor: auto;
+			}
+
+			/*.compass{position:absolute;width:2px;height:10px;z-index:1000;display:inline-block;background:red;top:10px;left:10px;}
+			.compass>span{background:yellow;width:100%;background:yellow;width:100%;height:5px;display:inline-block;position:absolute;}*/
+
+			.compass {
+				position: absolute;
+				width: 42px;
+				height: 42px;
+				z-index: 1000;
+				display: flex;
+				background: rgba(52, 62, 80, .9);
+				top: 64px;
+				right: 10px;
+				border-radius: 30px;
+				justify-content: center;
+				align-items: center;
+			}
+
+			.compass>span {
+				background-image: url(img/compass.png);
+				background-size: contain;
+				width: 12px;
+				height: 30px;
+				background-repeat: no-repeat;
+			}
+
+			.popdialog {
+				position: absolute;
+				z-index: 1000;
+				left: 0;
+				top: 0;
+				background: rgba(52, 62, 80, .8);
+				border-radius: 4px;
+				border: 1px solid #14171c;
+				background: linear-gradient(0deg, #1e202a 0%, #0d1013 100%);
+				box-shadow: 0px 2px 21px 0px rgba(33, 34, 39, 0.55);
+			}
+
+			.popdialog>.title {
+				height: 38px;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				background: linear-gradient(0deg, #252935 0%, #2b2e3a 100%);
+				border-radius: 3px 3px 0 0;
+			}
+
+			.popdialog>.title>.text {
+				margin-left: 20px;
+				color: #dcdcdc;
+			}
+
+			.popdialog>.title>.close {
+				margin-right: 10px;
+				background-image: url(img/close.png);
+				width: 30px;
+				height: 30px;
+				background-repeat: no-repeat;
+				background-position: center;
+				cursor: pointer;
+			}
+
+			.popdialog>.content {}
+
+			.popdialog .pickers {
+				margin-top: 10px;
+				text-align: center;
+			}
+
+			.popdialog .buttons {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				margin-top: 18px;
+			}
+
+			.popdialog .button {
+				padding: 10px 20px;
+				background: linear-gradient(0deg, #252935 0%, #2b2e3a 100%);
+				color: white;
+				border-radius: 4px;
+				cursor: pointer;
+			}
+
+			.popdialog .button+.button {
+				margin-left: 5px;
+			}
+
+			.cameradialog {}
+
+			.cameradialog video {
+				object-fit: fill;
+				width: 100%;
+				height: 100%;
+			}
+
+			.cameradialog .singlevideo {
+				background: #484A4A;
+				border: 1px solid black;
+				height: 450px;
+			}
+
+			.cameradialog .videos {
+				display: flex;
+				flex-direction: column;
+				flex-grow: 1;
+			}
+
+			.cameradialog .videos>.videos-row {
+				display: flex;
+			}
+
+			.cameradialog .videos>.videos-row>.video {
+				background: #484A4A;
+				border: 1px solid black;
+				flex-grow: 1;
+				flex-basis: 0;
+				height: 224px;
+			}
+
+			.replaydialog {}
+
+			.replaydialog>.content {
+				display: flex;
+				flex-direction: column;
+			}
+
+			.replaydialog>.content>.searchBlock {
+				height: 70px;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+			}
+
+			.replaydialog>.content>.searchBlock .button {
+				margin-left: 27px;
+			}
+
+			.replaydialog>.content>.bottomBlock {
+				display: flex;
+			}
+
+			.replaydialog>.content>.bottomBlock>.videolist {
+				width: 200px;
+			}
+
+			.replaydialog>.content>.bottomBlock>.videolist>.item {
+				color: white;
+				display: flex;
+				height: 30px;
+				align-items: center;
+				justify-content: space-around;
+				cursor: pointer;
+			}
+
+			.replaydialog>.content>.bottomBlock>.video {
+				background: #484A4A;
+				border: 1px solid black;
+				height: 446px;
+				flex-grow: 1;
+			}
+
+			.settingdialog {
+				left: 50%;
+				top: 50%;
+				transform: translate(-50%, -50%);
+				width: 325px;
+				height: 240px;
+			}
+
+			.settingdialog .buttons>div {
+				flex-grow: 1;
+				display: flex;
+				justify-content: flex-start;
+				flex-basis: 0;
+				margin-left: 35px;
+			}
+
+			.settingdialog .buttons>div:first-child {
+				justify-content: flex-end;
+				margin-left: 0;
+			}
+
+			.infodialog {
+				left: 50%;
+				top: 50%;
+				transform: translate(-50%, -50%);
+				width: 475px;
+				height: 240px;
+				color: white;
+			}
+
+			.infodialog .content {
+				padding: 10px 0;
+			}
+
+			.infodialog .detailitem {
+				line-height: 30px;
+			}
+
+			.infodialog .detailitem>.detaillabel {
+				width: 150px;
+				text-align: right;
+				display: inline-block;
+				vertical-align: top;
+				font-weight: bold;
+			}
+
+			.infodialog .detailitem>.detailtext {
+				width: 300px;
+				display: inline-block;
+				color: #dcdcdc;
+			}
+
+			.loadingdialog {
+				position: absolute;
+				z-index: 2000;
+				width: 48px;
+				height: 48px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				background: url(img/loading.gif);
+				background-size: contain;
+				background-repeat: no-repeat;
+				left: 50%;
+				top: 50%;
+				transform: translate(-50%, -50%);
+				animation: loading 13s;
+			}
+
+			.loadingdialog>.text {
+				margin-top: 200px;
+				font-size: 33px;
+				font-weight: bold;
+				position: absolute;
+			}
+
+			.tvdialog {
+				left: 50%;
+				top: 50%;
+				transform: translate(-50%, -50%);
+				width: 1100px;
+				height: 590px;
+				display: flex;
+				flex-direction: column;
+			}
+
+			.tvdialog .title {
+				height: 60px;
+			}
+
+			.tvdialog .actionbutton {
+				background: linear-gradient(180deg, rgba(61, 103, 184, 1), rgba(32, 65, 127, 1));
+				box-shadow: 0px 1px 0px 0px rgba(0, 0, 0, 0.25);
+				border-radius: 4px;
+				letter-spacing: 1px;
+				display: inline-block;
+				padding: 5px 15px;
+				margin-right: 10px;
+				color: white;
+				cursor: pointer;
+			}
+
+			.tvdialog .content {
+				overflow: auto;
+				overflow: overlay;
+				height: 100%;
+			}
+
+			.tvdialog .roomloccon {}
+
+			.tvdialog .roomloccon .roomloc {
+				background: linear-gradient(180deg, rgba(46, 67, 104, 1), rgba(29, 46, 76, 1));
+				display: flex;
+				align-items: center;
+			}
+
+			.tvdialog .roomloccon .roomloc .text {
+				color: #FFA10C;
+				margin-left: 30px;
+				flex-grow: 1;
+			}
+
+			.tvdialog .roomloccon .roomloc img {
+				margin-left: 15px;
+				margin-right: 30px;
+				transition: transform .5s;
+				cursor: pointer;
+			}
+
+			.tvdialog .roomloccon .roomloc img.unfold {
+				transform: rotate(180deg);
+			}
+
+			.tvdialog .roomloccon .roomloc .actionbutton {
+				margin: 10px 15px;
+			}
+
+			.tvdialog .roomloccon .roomcon {
+				display: flex;
+				flex-wrap: wrap;
+				max-height: 666px;
+				overflow: hidden;
+				transition: max-height .5s;
+			}
+
+			.tvdialog .roomloccon .roomcon.unfold {
+				max-height: 0;
+			}
+
+			.tvdialog .roomloccon .roomcon .roomloccon {
+				display: flex;
+				flex-direction: column;
+				color: white;
+				align-items: center;
+				margin: 40px;
+			}
+
+			.tvdialog .roomloccon .roomcon .roomloccon .text {
+				font-size: 14px;
+			}
+
+			.tvdialog .roomloccon .roomcon .roomloccon img {
+				margin: 10px 0;
+				margin-bottom: 15px;
+			}
+
+			.tvdialog .roomloccon .roomcon .roomloccon .switch {
+				background: #757D8F;
+				font-size: 14px;
+				border-radius: 4px;
+				padding: 5px 15px;
+				cursor: pointer;
+			}
+
+			.bottommenus {
+				position: fixed;
+				bottom: 0;
+				left: 50%;
+				transform: translateX(-50%);
+				z-index: 1;
+				display: flex;
+				justify-content: space-evenly;
+				height: 100px;
+				width: 800px;
+			}
+
+			.bottommenus .background {
+				background: linear-gradient(180deg, #5b83d2, #1d2e4c);
+				height: 94px;
+				width: 100%;
+				position: absolute;
+				bottom: 0;
+				transform: perspective(250px) rotateX(18deg);
+			}
+
+			.bottommenus .menu {
+				display: flex;
+				flex-direction: column;
+				cursor: pointer;
+				align-items: center;
+				z-index: 1;
+				top: -12px;
+				position: relative;
+				transition: transform .1s, opacity .1s;
+				opacity: 0.8;
+			}
+
+			.bottommenus .menu.selected {
+				text-shadow: 2px 2px 3px black;
+				transform: scale(1.2);
+				opacity: 1;
+			}
+
+			.bottommenus .menu img {}
+
+			.bottommenus .menu span {
+				color: white;
+				font-size: 14px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="main">
+			<div class="bottommenus">
+				<div class="background"></div>
+				<div class="menu" :class="{selected:tvDialogOpen}" @click="tvDialogOpen=!tvDialogOpen"><img
+						src="img/tv.png" /><span>电视</span></div>
+				<div class="menu" :class="{selected:showDoorLabel}" @click="showDoorLabel=!showDoorLabel"><img
+						src="img/door.png" /><span>门禁</span></div>
+				<div class="menu" :class="{selected:showCameraLabel}" @click="showCameraLabel=!showCameraLabel"><img
+						src="img/camera.png" /><span>摄像头</span></div>
+				<div class="menu" :class="{selected:settingDialogOpen}" @click="settingDialogOpen=!settingDialogOpen">
+					<img src="img/setting.png" /><span>系统设置</span></div>
+			</div>
+			<div id="canvas-frame"></div>
+			<!--<img src="img/loading.gif"/>-->
+			<!-- <div class="logo"></div> -->
+			<div class="topmenu blockborder" style="display:none;" v-show="true">
+				<div class="info">
+					<!-- <span class="account"><span class="icon-person icon"></span>{{policeName}}</span> -->
+					<span class="time"><span class="icon-time icon"></span>{{now}}</span>
+				</div>
+			</div>
+			<div class="menubench" style="display:none;" v-if="false" v-show="true">
+				<a @click="showDoorLabel=!showDoorLabel" class="state" :class="{selected:showDoorLabel}">
+					<span class="icon" style="background-image:url(img/icon-door.png);"></span>
+					<span class="text">门禁</span>
+				</a>
+				<a @click="showCameraLabel=!showCameraLabel" class="state" :class="{selected:showCameraLabel}">
+					<span class="icon" style="background-image:url(img/icon-camera.png);"></span>
+					<span class="text">摄像机</span>
+				</a>
+				<a @click="resetCamera">
+					<span class="icon" style="background-image:url(img/icon-reset.png);"></span>
+					<span class="text">重置</span>
+				</a>
+				<a @click="replay">
+					<span class="icon" style="background-image:url(img/icon-replay.png);"></span>
+					<span class="text">视频回放</span>
+				</a>
+				<a @click="settingDialogOpen=!settingDialogOpen">
+					<span class="icon" style="background-image:url(img/icon-setting.png);"></span>
+					<span class="text">系统设置</span>
+				</a>
+				<span class="new" v-show="isFold&&newAmount!=0"><span>{{newAmount}}</span></span>
+			</div>
+
+			<div class="dimension" style="display:none;" v-show="true">
+				<a value="2D" @click="updateDimension" :class="{selected:!is3D}">2D</a>
+				<a value="3D" @click="updateDimension" :class="{selected:is3D}">3D</a>
+				<a @click="resetCamera" class="selected"
+					style="cursor:pointer;display:flex;justify-content:center;"><img src="img/reset.png" /></a>
+			</div>
+
+			<div class="leftmenu" style="display:none;" v-show="true">
+				<div class="leftmenuframe" :class="{fold:isFold}">
+					<div class="shorttitle" v-show="isFold">
+						<span><img src="img/dongtai.png" />今日动态</span>
+						<span>
+							<img src="img/xiaoxi.png" />
+							<span class="new" v-show="isFold&&newAmount!=0">{{newAmount}}</span>消息
+						</span>
+					</div>
+					<div class="infos" :style="{height:infosHeight+'px'}">
+						<!-- v-show="!isFold" -->
+						<div class="line"></div>
+						<div class="blockborder today">
+							<div class="title"><img src="img/dongtai.png" />今日动态</div>
+							<div class="content">
+								<span class="item" v-for="item in today">
+									<img :src="'img/'+item.img+'.png'" />
+									<span class="name">{{item.name}}</span>
+									<span class="num">{{item.num}}</span>
+								</span>
+							</div>
+						</div>
+						<div class="blockborder message">
+							<div class="title"><img src="img/xiaoxi.png" />消息</div>
+							<div class="content" :style="{height:messageHeight+'px'}">
+								<div class="item" :class="{new:!item.readed}" v-for="item in message">
+									<span class="icon"></span>
+									<div class="infos">
+										<div>
+											<span class="location">{{item.title}}</span>
+											<span class="view" @click="openDetail(item,'video');"
+												v-if="item.deviceType=='17'||item.deviceType=='21'"><img
+													src="img/view.png" /></span>
+											<span class="view" @click="openDetail(item);" v-else><img
+													src="img/view.png" /></span>
+										</div>
+										<div>
+											<span class="reason">{{item.message}}</span>
+											<span class="time">{{getDate(item.createTime)}}</span>
+											<!--<span class="view" @click="openDetail(item,'video');" v-if="item.deviceType=='17'||item.deviceType=='21'">查看视频</span>
+											<span class="view" @click="openDetail(item);" v-else>查看</span>-->
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="foldblock" @click="isFold=!isFold">
+						<span class="fold" :style="{transform:isFold?'rotate(180deg)':'none'}"></span>
+					</div>
+				</div>
+			</div>
+			<span class="compass" style="display:none;" v-show="true">
+				<span :style="{transform:'rotate('+(compassAngle)+'deg)'}"></span>
+			</span>
+			<div v-show="loadingOpen" class="loadingdialog">
+				<!--<span class="text">载入中……</span>-->
+			</div>
+			<div v-show="dialogOpen" class="popdialog cameradialog" style="display:none;"
+				:style="{transform:'translate('+dialogLocation[0]+'px,'+dialogLocation[1]+'px',width:dialogWidth+'px',height:dialogHeight+'px'}">
+				<div class="title" @mousedown="drag($event)">
+					<span class="text">报警</span>
+					<span class="close" @mousedown="closeDialog"></span>
+				</div>
+				<div class="content">
+					<div id="playWnd" class="singlevideo media" v-show="singleCamera"></div>
+					<!-- <div class="videos" v-show="!singleCamera">
+						<div class="videos-row">
+							<div class="video media"><video autoplay muted></video></div>
+							<div class="video media"><video autoplay muted></video></div>
+						</div>
+						<div class="videos-row">
+							<div class="video media"><video autoplay muted></video></div>
+							<div class="video media"><video autoplay muted></video></div>
+						</div>
+					</div> -->
+					<div class="pickers" v-show="!isLive">
+						<el-date-picker v-model="playbackDatetime" type="datetimerange" size="mini" range-separator="至"
+							start-placeholder="开始日期" end-placeholder="结束日期" @focus="oWebControl.JS_HideWnd();"
+							@blur="oWebControl.JS_ShowWnd();"></el-date-picker>
+					</div>
+					<div class="buttons">
+						<div class="button" @click="handlePlayback" v-show="isLive">回放</div>
+						<div class="button" @click="startPlayback(cameraIndexCode)" v-show="!isLive">
+							播放录像</div>
+						<div class="button" @click="handlePlaylive" v-show="!isLive">返回实时</div>
+						<!-- <div class="button" @click="singleCamera=false" v-show="singleCamera">联动周围摄像头</div>
+						<div class="button" @click="singleCamera=true" v-show="!singleCamera">返回</div> -->
+					</div>
+				</div>
+			</div>
+			<div v-show="replayDialogOpen" class="popdialog replaydialog" style="display:none;"
+				:style="{transform:'translate('+replayDialogLocation[0]+'px,'+replayDialogLocation[1]+'px',width:replayDialogWidth+'px',height:replayDialogHeight+'px'}">
+				<div class="title" @mousedown="replayDrag($event)">
+					<span class="text">回放</span>
+					<span class="close" @mousedown="replayDialogOpen=false"></span>
+				</div>
+				<div class="content">
+					<div class="searchBlock">
+						<el-date-picker v-model="replayDate" type="daterange" align="right" unlink-panels
+							range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" style="width:850px"
+							:picker-options="pickerOptions">
+						</el-date-picker>
+						<div class="button">搜索</div>
+					</div>
+					<div class="bottomBlock">
+						<div class="videolist">
+							<div class="item" v-for="item in videos">
+								<span>{{item.date}}</span>
+								<span>{{item.name}}</span>
+							</div>
+						</div>
+						<div class="video"></div>
+					</div>
+				</div>
+			</div>
+			<div v-show="settingDialogOpen" class="popdialog settingdialog" style="display:none;">
+				<div class="title">
+					<span class="text">设置</span>
+					<span class="close" @mousedown="settingDialogOpen=false"></span>
+				</div>
+				<div class="content">
+					<div class="buttons">
+						<div>
+							<div class="button">产品说明</div>
+						</div>
+						<div>
+							<div class="button">切换用户</div>
+						</div>
+					</div>
+					<div class="buttons">
+						<div>
+							<div class="button">系统设置</div>
+						</div>
+						<div>
+							<div class="button">退出登录</div>
+						</div>
+					</div>
+					<div class="buttons">
+						<div>
+							<div class="button" @click="changeDeviceOperate">{{deviceOperate?'隐藏操作':'显示操作'}}</div>
+						</div>
+						<div>
+							<div class="button" @click="isVoice=!isVoice">{{isVoice?'关闭语音':'开启语音'}}</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div v-show="infoDialogOpen" class="popdialog infodialog" style="display:none;">
+				<div class="title">
+					<span class="text">详情</span>
+					<span class="close" @mousedown="infoDialogOpen=false"></span>
+				</div>
+				<div class="content">
+					<div class="detailitem">
+						<span class="detaillabel">标题：</span>
+						<span class="detailtext">{{detail.title}}</span>
+					</div>
+					<div class="detailitem">
+						<span class="detaillabel">创建时间：</span>
+						<span class="detailtext">{{detail.createTime}}</span>
+					</div>
+					<div class="detailitem">
+						<span class="detaillabel">设备类型：</span>
+						<span class="detailtext">{{detail.deviceTypeName}}</span>
+					</div>
+					<div class="detailitem">
+						<span class="detaillabel">内容：</span>
+						<span class="detailtext">{{detail.message}}</span>
+					</div>
+				</div>
+			</div>
+			<div v-show="tvDialogOpen" class="popdialog tvdialog" style="display:none;">
+				<div class="title">
+					<span class="text">
+						<span class="actionbutton" @click="toggleAllTv">一键开启 / 关闭</span>
+					</span>
+					<span class="close" @mousedown="tvDialogOpen=false"></span>
+				</div>
+				<div class="content">
+					<div class="roomloccon" v-for="loc in tvs">
+						<div class="roomloc">
+							<span class="text">{{loc.mc}}</span>
+							<span class="actionbutton" @click="toggleLocTv(loc)">全部开启 / 关闭</span>
+							<img src="img/arrow.png" :class="{unfold:loc.unfold}" @click="loc.unfold=!loc.unfold" />
+						</div>
+						<div class="roomcon" :class="{unfold:loc.unfold}">
+							<div class="roomloccon" v-for="tv in loc.children">
+								<span class="text">{{tv.sbmc}}</span>
+								<img src="img/icontv.png" />
+								<div class="switch" @click="toggleTv(tv)">开 / 关</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script src="config.js"></script>
+		<script src="lib/jquery.min.js"></script>
+		<script src="lib/vue.js"></script>
+		<script src="lib/hls.min.js"></script>
+		<script src="lib/three.min.js"></script>
+		<script src="lib/OBJLoader.js"></script>
+		<script src="lib/MTLLoader.js"></script>
+
+		<script src="lib/OrbitControls.js"></script>
+		<script src="lib/CSS2DRenderer.js"></script>
+		<script src="lib/threebsp.js"></script>
+
+		<script src="lib/element-ui/index.js"></script>
+		<link rel="stylesheet" href="lib/element-ui/theme-chalk/index.css" />
+
+		<script src="js/common.js"></script>
+		<script src="js/utility.js"></script>
+		<script src="js/models.js"></script>
+		<script src="js/objects.js"></script>
+		<script src="js/customModel.js"></script>
+		<script src="js/stateEvents.js"></script>
+		<script src="js/threeViewer.js"></script>
+		<script src="js/jsencrypt.min.js"></script>
+		<script src="js/jsWebControl-1.0.0.min.js"></script>
+		<script src="js/siyang_map.js"></script>
+		<script>
+			var menuState = {
+				is3D: true,
+				objectList: [],
+				compassAngle: 0,
+				showCameraLabel: false,
+				showDoorLabel: false,
+				dialogLocation: [0, 0],
+				dialogWidth: 800,
+				dialogHeight: 600,
+				dialogOpen: false,
+				isLive: true,
+				cameraIndexCode: null,
+				infosHeight: 0,
+				playbackDatetime: [new Date(new Date().toLocaleDateString()), new Date(new Date(new Date()
+					.toLocaleDateString()).getTime() + 24 * 60 * 60 * 1000 - 1)],
+				messageHeight: 300,
+				singleCamera: true,
+				isFold: false,
+				loadingOpen: true,
+				infoDialogOpen: false,
+				settingDialogOpen: false,
+				tvDialogOpen: false,
+				deviceOperate: false,
+				isVoice: true,
+				replayDialogOpen: false,
+				replayDialogLocation: [0, 0],
+				replayDialogWidth: 1000,
+				//replayDialogHeight:571,
+				replayDialogHeight: 557,
+				replayDate: '',
+				detail: {},
+				pickerOptions: {
+					shortcuts: [{
+						text: '最近一周',
+						onClick(picker) {
+							const end = new Date();
+							const start = new Date();
+							start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+							picker.$emit('pick', [start, end]);
+						}
+					}, {
+						text: '最近一个月',
+						onClick(picker) {
+							const end = new Date();
+							const start = new Date();
+							start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+							picker.$emit('pick', [start, end]);
+						}
+					}, {
+						text: '最近三个月',
+						onClick(picker) {
+							const end = new Date();
+							const start = new Date();
+							start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+							picker.$emit('pick', [start, end]);
+						}
+					}]
+				},
+
+				policeName: '张警官',
+				now: '',
+				today: [{
+						name: '入所',
+						num: '-',
+						img: 'ru'
+					},
+					{
+						name: '出所',
+						num: '-',
+						img: 'chu'
+					},
+					{
+						name: '所外就医',
+						num: '-',
+						img: 'jiuyi'
+					},
+					{
+						name: '提讯',
+						num: '-',
+						img: 'tixun'
+					},
+					{
+						name: '家属会见',
+						num: '-',
+						img: 'jiashu'
+					},
+					{
+						name: '律师会见',
+						num: '-',
+						img: 'lvshi'
+					},
+				],
+				message: [
+					/*{location:'五监区通道门报警',time:'2019-04-19 16:12:32',reason:'张三非法闯入',isNew:true},
+					{location:'四监区通道门报警',time:'2019-04-18 16:12:32',reason:'李四非法闯入',isNew:true},
+					{location:'五监区通道门报警',time:'2019-04-18 15:13:21',reason:'李四非法闯入',isNew:true},
+					{location:'五监区通道门报警',time:'2019-04-17 16:12:43',reason:'张三非法闯入',isNew:true},
+					{location:'三监区通道门报警',time:'2019-04-17 16:11:32',reason:'王五非法闯入',isNew:true},
+					{location:'三监区通道门报警',time:'2019-04-16 16:10:32',reason:'张三非法闯入',isNew:false},
+					{location:'五监区通道门报警',time:'2019-04-15 16:12:32',reason:'韩七非法闯入',isNew:false},
+					{location:'三监区通道门报警',time:'2019-04-19 16:12:32',reason:'张三非法闯入',isNew:false},
+					{location:'五监区通道门报警',time:'2019-04-19 16:12:32',reason:'张三非法闯入',isNew:false},
+					{location:'二监区通道门报警',time:'2019-04-19 16:12:32',reason:'张三非法闯入',isNew:false},
+					{location:'五监区通道门报警',time:'2019-04-19 16:12:32',reason:'张三非法闯入',isNew:false},
+					{location:'五监区通道门报警',time:'2019-04-19 16:12:32',reason:'张三非法闯入',isNew:false},*/
+				],
+				tvs: [
+					/*{bh:'sdaad',mc:'第一件区',unfold:false,children:[
+						{bh:'fagag',sbmc:'asfafa'},
+						{bh:'faga2g',sbmc:'asfafa2'},
+						{bh:'faga4g',sbmc:'asfafa3'},
+					]},
+					{bh:'sdaad2',mc:'第er件区',unfold:false,children:[
+						{bh:'fagag2',sbmc:'asfafa4'},
+						{bh:'faga2g2',sbmc:'asfafa22'},
+						{bh:'faga4g2',sbmc:'asfafa31'},
+						{bh:'fagag2',sbmc:'asfafa4'},
+						{bh:'faga2g2',sbmc:'asfafa22'},
+						{bh:'fagag2',sbmc:'asfafa4'},
+						{bh:'faga2g2',sbmc:'asfafa22'},
+						{bh:'faga4g2',sbmc:'asfafa31'},
+					]},*/
+				],
+				videos: [{
+						name: '视频文件1',
+						date: '2019-04-19'
+					},
+					{
+						name: '视频文件2',
+						date: '2019-04-18'
+					},
+					{
+						name: '视频文件1',
+						date: '2019-04-17'
+					},
+					{
+						name: '视频文件2',
+						date: '2019-04-16'
+					},
+					{
+						name: '视频文件1',
+						date: '2019-04-15'
+					},
+				]
+			};
+
+			var vm = new Vue({
+				el: '.main',
+				data: menuState,
+				mounted() {
+					setInterval(() => {
+						var now = new Date();
+						var year = now.getFullYear();
+						var month = now.getMonth() > 8 ? now.getMonth() + 1 : '0' + (now.getMonth() + 1);
+						var day = now.getDate() > 9 ? now.getDate() : '0' + now.getDate();
+						var hour = now.getHours() > 9 ? now.getHours() : '0' + now.getHours();
+						var minute = now.getMinutes() > 9 ? now.getMinutes() : '0' + now.getMinutes();
+						var second = now.getSeconds() > 9 ? now.getSeconds() : '0' + now.getSeconds();
+						this.now = year + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second;
+					}, 1000);
+					this.initPlugin();
+				},
+				computed: {
+					newAmount() {
+						return this.message.filter((p) => {
+							return !p.readed;
+						}).length;
+					}
+				},
+				watch: {
+					isFold(value) {
+						this.infosHeight = value ? 0 : this.messageHeight + 247;
+					},
+					messageHeight(value) {
+						this.infosHeight = this.isFold ? 0 : value + 247;
+					},
+					tvDialogOpen(value) {
+						this.isFold = value;
+					},
+				},
+				methods: {
+					getDate(time) {
+						if (time.indexOf(' ') == -1) {
+							return '';
+						}
+						var times = time.split(' ');
+
+						var now = new Date();
+						var year = now.getFullYear();
+						var month = now.getMonth() > 8 ? now.getMonth() + 1 : '0' + (now.getMonth() + 1);
+						var day = now.getDate() > 9 ? now.getDate() : '0' + now.getDate();
+						if (times[0] == year + '-' + month + '-' + day) {
+							return times[1];
+						}
+						return times[0];
+					},
+					updateDimension(e) {
+						this.is3D = e.currentTarget.attributes['value'].value == '3D';
+						orbitctrl.enabled = this.is3D;
+						planformOrbitctrl.enabled = !this.is3D;
+					},
+					resetCamera() {
+						orbitctrl.reset();
+						planformOrbitctrl.reset();
+					},
+					drag(e) {
+						var that = this;
+						var o = [that.dialogLocation[0], that.dialogLocation[1]];
+						document.onmousemove = function(ev) {
+							that.dialogLocation = [o[0] + ev.clientX - e.clientX, o[1] + ev.clientY - e.clientY];
+						};
+						document.onmouseup = function() {
+							document.onmousemove = null;
+							document.onmouseup = null;
+							oWebControl.JS_Resize(798, 450);
+						};
+						return false;
+					},
+					replayDrag(e) {
+						var that = this;
+						var o = [that.replayDialogLocation[0], that.replayDialogLocation[1]];
+						document.onmousemove = function(ev) {
+							that.replayDialogLocation = [o[0] + ev.clientX - e.clientX, o[1] + ev.clientY - e
+								.clientY];
+						};
+						document.onmouseup = function() {
+							document.onmousemove = null;
+							document.onmouseup = null;
+						};
+						return false;
+					},
+					openDialog(id, address) {
+						this.cameraIndexCode = address;
+						var body = document.getElementsByTagName('body')[0];
+						this.dialogLocation = [body.clientWidth / 2 - this.dialogWidth / 2, body.clientHeight / 2 - this
+							.dialogHeight /
+							2
+						];
+						this.dialogOpen = true;
+						this.playVideo();
+					},
+					playVideo(address) {
+						this.$nextTick(() => {
+							this.handlePlaylive();
+							oWebControl.JS_ShowWnd();
+							oWebControl.JS_Resize(798, 450);
+						})
+					},
+					closeDialog() {
+						this.uninit();
+						oWebControl.JS_HideWnd();
+						this.singleCamera = true;
+						this.dialogOpen = false;
+					},
+					replay() {
+						var body = document.getElementsByTagName('body')[0];
+						this.replayDialogLocation = [body.clientWidth / 2 - this.replayDialogWidth / 2, body
+							.clientHeight / 2 - this.replayDialogHeight /
+							2
+						];
+						this.replayDialogOpen = true;
+					},
+					openDetail(item, type) {
+						common.connect('post', '/door/deviceMessage/markRead', {
+							id: item.id
+						}, function(data) {
+							item.readed = 1;
+						});
+						if (type == 'video') {
+							var that = this;
+							common.connect('get', '/door/doorCamera/queryBindCameras?doorId=' + item.deviceId, function(
+								data) {
+								var address = '';
+								var item = data[0];
+								if (item && item.fjxxJson && item.fjxxJson.streamAddress) {
+									address = item.fjxxJson.streamAddress;
+								}
+								that.openDialog(item.bh, address);
+							});
+						} else {
+							this.detail = {};
+							common.connect('get', '/door/sblx/queryByBm', {
+								bm: item.deviceType
+							}, function(data) {
+								item.deviceTypeName = data.lxmc;
+								menuState.detail = item;
+							});
+							this.infoDialogOpen = true;
+						}
+					},
+					changeDeviceOperate() {
+						this.deviceOperate = !this.deviceOperate;
+						for (var i = 0; i < objectList.length; i++) {
+							if (objectList[i].code != null) {
+								objectList[i].updateState(objectList[i].states, true);
+							}
+						}
+					},
+					toggleAllTv() {
+						common.connect('post', '/door/sb/toggleAllTv', function(data) {
+							alert('操作成功！');
+						});
+					},
+					toggleLocTv(loc) {
+						if (loc.children.length == 0) {
+							alert('当前监区没有设备！');
+							return;
+						}
+						common.connect('post', '/door/sb/toggleTv', {
+							bhs: loc.children.map(p => p.bh).join(',')
+						}, function(data) {
+							alert('操作成功！');
+						});
+					},
+					toggleTv(tv) {
+						common.connect('post', '/door/sb/toggleTv', {
+							bhs: tv.bh
+						}, function(data) {
+							alert('操作成功！');
+						});
+					},
+					initPlugin() {
+						var that = this;
+						oWebControl = new WebControl({
+							szPluginContainer: "playWnd", // 指定容器id
+							iServicePortStart: 15900, // 指定起止端口号，建议使用该值
+							iServicePortEnd: 15909,
+							szClassId: "23BF3B0A-2C56-4D97-9C03-0CB103AA8F11", // 用于IE10使用ActiveX的clsid
+							cbConnectSuccess: function() { // 创建WebControl实例成功											
+								oWebControl.JS_StartService("window", { // WebControl实例创建成功后需要启动服务
+									dllPath: "./VideoPluginConnect.dll" // 值"./VideoPluginConnect.dll"写死 
+								}).then(function() { // 启动插件服务成功
+									oWebControl.JS_SetWindowControlCallback({ // 设置消息回调
+										cbIntegrationCallBack: that.cbIntegrationCallBack
+									});
+
+									oWebControl.JS_CreateWnd("playWnd", 798, 450).then(
+										function() { //JS_CreateWnd创建视频播放窗口，宽高可设定
+											oWebControl.JS_HideWnd();
+											that.init(0); // 创建播放实例成功后初始化
+										});
+								}, function() { // 启动插件服务失败
+								});
+							},
+							cbConnectError: function() { // 创建WebControl实例失败
+								oWebControl = null;
+								alert("插件未启动，正在尝试启动，请稍候...");
+								WebControl.JS_WakeUp("VideoWebPlugin://"); // 程序未启动时执行error函数，采用wakeup来启动程序
+								initCount++;
+								if (initCount < 3) {
+									setTimeout(function() {
+										initPlugin();
+									}, 3000)
+								} else {
+									alert("插件启动失败，请检查插件是否安装！");
+								}
+							},
+							cbConnectClose: function(bNormalClose) {
+								// 异常断开：bNormalClose = false
+								// JS_Disconnect正常断开：bNormalClose = true	
+								console.log("cbConnectClose");
+								oWebControl = null;
+							}
+						});
+					},
+					cbIntegrationCallBack(oData) {
+						// alert(JSON.stringify(oData.responseMsg));
+					},
+					init(playMode) {
+						var that = this;
+						return new Promise(resolve => {
+							that.getPubKey(function() {
+
+								////////////////////////////////// 请自行修改以下变量值	////////////////////////////////////		
+								var appkey = CAMERACONFIG.appkey; //综合安防管理平台提供的appkey，必填
+								var secret = that.setEncrypt(CAMERACONFIG.secret); //综合安防管理平台提供的secret，必填
+								var ip = CAMERACONFIG.ip; //综合安防管理平台IP地址，必填
+								// var playMode = playMode?1:0; //初始播放模式：0-预览，1-回放
+								var port = 443; //综合安防管理平台端口，若启用HTTPS协议，默认443
+								var snapDir = "D:\\SnapDir"; //抓图存储路径
+								var videoDir = "D:\\VideoDir"; //紧急录像或录像剪辑存储路径
+								var layout = "1x1"; //playMode指定模式的布局
+								var enableHTTPS = 1; //是否启用HTTPS协议与综合安防管理平台交互，这里总是填1
+								var encryptedFields = 'secret'; //加密字段，默认加密领域为secret
+								var showToolbar = 1; //是否显示工具栏，0-不显示，非0-显示
+								var showSmart = 1; //是否显示智能信息（如配置移动侦测后画面上的线框），0-不显示，非0-显示
+								var buttonIDs =
+									"0,16,256,257,258,259,260,512,513,514,515,516,517,768,769"; //自定义工具条按钮
+								////////////////////////////////// 请自行修改以上变量值	////////////////////////////////////
+
+								oWebControl.JS_RequestInterface({
+									funcName: "init",
+									argument: JSON.stringify({
+										appkey: appkey, //API网关提供的appkey
+										secret: secret, //API网关提供的secret
+										ip: ip, //API网关IP地址
+										playMode: playMode, //播放模式（决定显示预览还是回放界面）
+										port: port, //端口
+										snapDir: snapDir, //抓图存储路径
+										videoDir: videoDir, //紧急录像或录像剪辑存储路径
+										layout: layout, //布局
+										enableHTTPS: enableHTTPS, //是否启用HTTPS协议
+										encryptedFields: encryptedFields, //加密字段
+										showToolbar: showToolbar, //是否显示工具栏
+										showSmart: showSmart, //是否显示智能信息
+										buttonIDs: buttonIDs //自定义工具条按钮
+									})
+								}).then(function(oData) {
+									// console.log(oData)
+									oWebControl.JS_Resize(798,
+									450); // 初始化后resize一次，规避firefox下首次显示窗口后插件窗口未与DIV窗口重合问题
+									resolve();
+								});
+							});
+						})
+					},
+					uninit() {
+						oWebControl.JS_RequestInterface({
+							funcName: "uninit"
+						});
+					},
+					getPubKey(callback) {
+						oWebControl.JS_RequestInterface({
+							funcName: "getRSAPubKey",
+							argument: JSON.stringify({
+								keyLength: 1024
+							})
+						}).then(function(oData) {
+							// console.log(oData);
+							if (oData.responseMsg.data) {
+								pubKey = oData.responseMsg.data;
+								callback()
+							}
+						})
+					},
+					setEncrypt(value) {
+						var encrypt = new JSEncrypt();
+						encrypt.setPublicKey(pubKey);
+						return encrypt.encrypt(value);
+					},
+					startPreview(cameraIndexCode) {
+						oWebControl.JS_RequestInterface({
+							funcName: "startPreview",
+							argument: JSON.stringify({
+								cameraIndexCode: cameraIndexCode, //监控点编号
+								streamMode: 0, //主子码流标识
+								transMode: 1, //传输协议
+								gpuMode: 0, //是否开启GPU硬解
+								wndId: -1 //可指定播放窗口
+							})
+						})
+					},
+					stopAllPreview() {
+						oWebControl.JS_RequestInterface({
+							funcName: "stopAllPreview"
+						});
+					},
+					startPlayback(cameraIndexCode) {
+						var that = this;
+						oWebControl.JS_RequestInterface({
+							funcName: "startPlayback",
+							argument: JSON.stringify({
+								cameraIndexCode: cameraIndexCode, //监控点编号
+								startTimeStamp: Math.floor(that.playbackDatetime[0].getTime() / 1000)
+									.toString(), //录像查询开始时间戳，单位：秒
+								endTimeStamp: Math.floor(that.playbackDatetime[1].getTime() / 1000)
+									.toString(), //录像结束开始时间戳，单位：秒
+								recordLocation: 0, //录像存储类型：0-中心存储，1-设备存储
+								transMode: 1, //传输协议：0-UDP，1-TCP
+								gpuMode: 0, //是否启用GPU硬解，0-不启用，1-启用
+								wndId: -1 //可指定播放窗口
+							})
+						})
+					},
+					stopAllPlayback() {
+						oWebControl.JS_RequestInterface({
+							funcName: "stopAllPlayback"
+						});
+					},
+					handlePlayback() {
+						this.uninit();
+						this.init(1).then(() => {
+							this.startPlayback(this.cameraIndexCode);
+						});
+						this.isLive = false;
+					},
+					handlePlaylive() {
+						this.uninit();
+						this.init(0).then(() => {
+							this.startPreview(this.cameraIndexCode);
+						});
+						this.isLive = true;
+					},
+				}
+			});
+
+			threeViewer.onWindowResize = function() {
+				menuState.messageHeight = height - 355 + 55;
+			}
+			threeViewer.load(menuState);
+
+			common.connect('get', '/door/deviceMessage?page=1&rows=20', function(data) {
+				menuState.message = data.list;
+			});
+
+			common.connect('get', '/door/sb/queryTvSb', function(data) {
+				var locs = data.jq;
+				for (var i = 0; i < locs.length; i++) {
+					locs[i].unfold = false;
+					locs[i].children = [];
+					var rooms = data.js.filter(p => p.jqbh == locs[i].bh);
+					if (rooms.length == 0)
+						continue;
+					var tvs = data.sb.filter(p => rooms.some(a => a.bh == p.jsbh));
+					if (tvs.length == 0)
+						continue;
+					locs[i].children = tvs;
+				}
+				menuState.tvs = locs;
+			});
+
+			common.connect('get', '/door/jjbjl', function(data) {
+				menuState.today[0].num = data.todayTotal.filter(p => p.type == '入所')[0].total;
+				menuState.today[1].num = data.todayTotal.filter(p => p.type == '出所')[0].total;
+				menuState.today[2].num = data.todayTotal.filter(p => p.type == '所外就医')[0].total;
+				menuState.today[3].num = data.todayTotal.filter(p => p.type == '提讯')[0].total;
+				menuState.today[4].num = data.todayTotal.filter(p => p.type == '家属会见')[0].total;
+				menuState.today[5].num = data.todayTotal.filter(p => p.type == '律师会见')[0].total;
+			});
+
+			model.ready(function() {
+				customModel.load();
+				animation();
+
+				loadObjects();
+				common.connect('get', '/door/sb/queryAll?dtxs=1', function(data) {
+					var devices = [];
+					for (var i = 0; i < data.length; i++) {
+						data[i].selected = false;
+						devices.push(data[i]);
+						if (data[i].dtpz != '' && data[i].dtpz != null) {
+							eval('var p=' + data[i].dtpz);
+
+							if ( /*data[i].lxbm=='17'||data[i].lxbm=='21'*/ p.refId != null) {
+								var obj = objectList[p.refId];
+								//p.label={text:cameraHtml(data[i].sbmc,data[i].bh)+'：'};
+								p.label = {
+									text: data[i].sbmc + '：'
+								};
+								obj.states = {
+									state: -100
+								};
+
+								obj.code = data[i].bh;
+								obj.update(p);
+								obj.updateState({
+									state: getState(data[i])
+								});
+							} else {
+								p.modelName = modelConfigs['01'];
+								if (modelConfigs[data[i].lxbm] != null)
+									p.modelName = modelConfigs[data[i].lxbm];
+
+								if (p.modelName == 'camera') {
+									var address = '';
+									if (data[i].fjxxJson && data[i].fjxxJson.streamAddress) {
+										address = data[i].fjxxJson.streamAddress;
+									}
+									p.label = {
+										text: cameraHtml(data[i].sbmc, data[i].bh, address) + '：'
+									};
+								} else {
+									p.label = {
+										text: data[i].sbmc + '：'
+									};
+								}
+								p.states = {
+									state: getState(data[i])
+								};
+
+								var obj = new ThreeMap.Model(p);
+								obj.code = data[i].bh;
+								obj.create();
+							}
+						}
+					}
+
+					//menuState.devices=devices;
+
+					var ws = new WebSocket(socketPath + '/ws');
+					ws.onopen = function() {};
+					ws.onmessage = function(evt) {
+						var data = JSON.parse(evt.data);
+						// console.log(data);
+						if (data.command == 'pushMessage') {
+							if (menuState.isVoice && data.data.title)
+								window.speechSynthesis.speak(new SpeechSynthesisUtterance('请注意，' + data.data
+									.title));
+							menuState.message.unshift(data.data);
+						} else if (data.command == 'pushDeviceState') {
+							for (var i = 0; i < objectList.length; i++) {
+								if (objectList[i].code != null && objectList[i].code == data.data.bh) {
+									objectList[i].updateState({
+										state: getState(data.data)
+									});
+									// console.log(objectList[i])
+									// 外屏显示门禁房门开了
+									if (!sessionStorage.getItem(objectList[i].code + '_label_text')) {
+										sessionStorage.setItem(objectList[i].code + '_label_text', JSON
+											.stringify(objectList[i].params.label.text));
+									}
+									if (data.data.zt == 1) {
+										// console.log(JSON.parse(sessionStorage.getItem(objectList[i].code +
+										// 	'_label_text')))
+										objectList[i].update({
+											label: {
+												text: JSON.parse(sessionStorage.getItem(objectList[i]
+													.code + '_label_text')),
+												visible: false
+											}
+										});
+									} else if (data.data.zt == 2) {
+										objectList[i].update({
+											label: {
+												text: '门开了！',
+												visible: true
+											}
+										});
+									}
+									break;
+								}
+							}
+
+							//7264ebb9d82a4a3587338da2f3add463
+						}
+					};
+					ws.onclose = function() {};
+				});
+
+				menuState.loadingOpen = false;
+			});
+
+			var loadObjects = function() {
+				var objs = demoData;
+				for (var i = 0; i < objs.length; i++) {
+					var obj = new ThreeMap[objs[i].type](objs[i]);
+					obj.create();
+				}
+			}
+
+			var getState = function(data) {
+				/*if(data.online=='1'){
+					if(data.zt==null&&data.zt=='0'){
+						return 1;
+					}
+					return data.zt;
+				}
+				else{
+					return null;
+				}*/
+				if (data.zt == null) {
+					data.zt = 0;
+				}
+				return data.zt;
+			}
+
+			var labelObjects = [];
+
+			function showLabel(cam) {
+				var pos = cam.position;
+				var curLabelObjects = [];
+				for (var i = 0; i < objectList.length; i++) {
+					var range = 100;
+					var obj = objectList[i];
+					if (obj.params.label.showDistance != null) {
+						range = obj.params.label.showDistance;
+					}
+					if (obj.params.label.text != '' &&
+						(menuState.showCameraLabel && obj.params.modelName == 'camera' ||
+							menuState.showDoorLabel && obj.params.modelName == 'door' ||
+							obj.params.position.x < pos.x + range && obj.params.position.x > pos.x - range &&
+							obj.params.position.z < pos.z + range && obj.params.position.z > pos.z - range &&
+							obj.params.position.y < pos.y * (1 / cam.zoom) + range && obj.params.position.y > pos.y * (1 / cam
+								.zoom) - range
+						)
+					) {
+						curLabelObjects.push(obj);
+					}
+				}
+
+				for (var c = 0; c < curLabelObjects.length; c++) {
+					var exists = false;
+					for (var l = 0; l < labelObjects.length; l++) {
+						if (labelObjects[l] == curLabelObjects[c]) {
+							labelObjects.splice(l, 1);
+							exists = true;
+							break;
+						}
+					}
+					if (!exists) {
+						curLabelObjects[c].update({
+							label: {
+								visible: true
+							}
+						});
+					}
+				}
+				for (var l = 0; l < labelObjects.length; l++) {
+					labelObjects[l].update({
+						label: {
+							visible: false
+						}
+					});
+				}
+				labelObjects = curLabelObjects;
+			}
+
+			function actionDevice(ctl, id, open, type) {
+				if (ctl.style.color != 'gray') {
+					ctl.style.color = 'gray';
+
+					if (type == 'door') {
+						common.connect('post', '/door/sb/openDoor', {
+							bh: id
+						}, function(data) {
+
+						});
+					} else {
+						common.connect('post', '/door/sb/controlCanSb', {
+							bh: id,
+							flag: open
+						}, function(data) {
+
+						});
+					}
+					//objectList.filter(p=>p.code==id)[0].updateState({state:open?1:2});
+					setTimeout(() => {
+						ctl.style.color = '';
+					}, 5000);
+				}
+			}
+
+			function animation() {
+				//orbitctrl.update();
+
+				menuState.compassAngle = (menuState.is3D ? orbitctrl.getAzimuthalAngle() : planformOrbitctrl
+				.getAzimuthalAngle()) *
+					180 / Math.PI;
+
+				renderer.render(scene, menuState.is3D ? camera : planformCamera);
+
+				showLabel(menuState.is3D ? camera : planformCamera);
+				labelRenderer.render(scene, menuState.is3D ? camera : planformCamera);
+				requestAnimationFrame(animation);
+			}
+		</script>
+	</body>
+</html>
